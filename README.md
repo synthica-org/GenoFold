@@ -1,8 +1,34 @@
+<div align="center">
+
 # GenoFold
 
-**A confidence-aware, explainable, multi-modal AI framework for 3D genome reconstruction**
+```
+  NGS · Hi-C · Metadata
+         ╲   │   ╱
+          ╲  │  ╱
+      ┌─────────────┐
+      │   GenoFold  │
+      └─────────────┘
+            │
+     3D structure · confidence · insight
+```
+
+*Folding fragmented genomic data into structure you can read, trust, and explain.*
+
+<br/>
+
+**A confidence-aware, explainable, multi-modal AI framework**  
+for reconstructing three-dimensional genome architecture
+
+<br/>
 
 **Ram Suhrut** (SYALIS) · **Quang Bui** (Synthica)
+
+<br/>
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
+</div>
 
 ---
 
