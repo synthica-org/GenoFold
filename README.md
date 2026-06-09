@@ -22,7 +22,7 @@ for reconstructing three-dimensional genome architecture
 
 <br/>
 
-**Ram Suhrut** (SYALIS) · **Quang Bui** (Synthica)
+**Ram Suhrut Seelamankalugari** (SYALIS) · **Quang Bui** (Synthica)
 
 <br/>
 
@@ -114,7 +114,7 @@ GenoFold will be evaluated against established methods across complementary dime
 
 | Name | Affiliation |
 |------|-------------|
-| **Ram Suhrut** | SYALIS |
+| **Ram Suhrut Seelamankalugari** | SYALIS |
 | **Quang Bui** | Synthica |
 
 ---
