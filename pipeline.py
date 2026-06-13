@@ -29,6 +29,8 @@ import logging
 from dataclasses import dataclass, field
 from typing import List, Optional
 
+import torch
+
 import numpy as np
 import pandas as pd
 
