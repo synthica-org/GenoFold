@@ -1,0 +1,25 @@
+# macOS
+.DS_Store
+**/.DS_Store
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.env
+venv/
+*.egg-info/
+
+# Data files
+*.cool
+*.mcool
+*.bam
+*.bai
+*.npy
+
+# Model checkpoints
+checkpoints/
+*.pt
+
+# Jupyter
+.ipynb_checkpoints/
