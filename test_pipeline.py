@@ -154,3 +154,49 @@ def test_pipeline(n_bins: int = 50):
 
 if __name__ == "__main__":
     test_pipeline(n_bins=50)
+
+
+def test_stage3(n_bins: int = 50):
+    """Test stage 3 (Infer) — GNN + Transformer."""
+    import torch
+    logger.info("Running stage 3 test...")
+
+    # Run stages 1-2 first to get the Data object
+    data = test_pipeline(n_bins=n_bins)
+
+    from pipeline import GenoFoldPipeline, PipelineConfig
+    config = PipelineConfig(bin_size=40_000, top_k_edges=10)
+    pipeline = GenoFoldPipeline(config=config)
+
+    output, model = pipeline.infer(data, hidden_dim=64)
+
+    # Assertions
+    assert output.embeddings is not None,                        "Embeddings must not be None"
+    assert output.embeddings.shape[0] == data.num_nodes,        "Node count mismatch"
+    assert output.embeddings.shape[1] == 64,                    "Hidden dim mismatch"
+    assert output.gnn_embeddings.shape == output.embeddings.shape, "GNN/final shape mismatch"
+    assert not output.embeddings.isnan().any(),                  "Embeddings contain NaN"
+    assert not output.gnn_embeddings.isnan().any(),              "GNN embeddings contain NaN"
+
+    total_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+
+    logger.info("")
+    logger.info("═" * 55)
+    logger.info("  GenoFold stage 3: ALL ASSERTIONS PASSED ✓")
+    logger.info("═" * 55)
+    logger.info(f"  Embedding shape:   {tuple(output.embeddings.shape)}")
+    logger.info(f"  GNN emb shape:     {tuple(output.gnn_embeddings.shape)}")
+    logger.info(f"  Model parameters:  {total_params:,}")
+    logger.info("═" * 55)
+    return output, model
+
+
+if __name__ == "__main__":
+    import sys
+    stage = sys.argv[1] if len(sys.argv) > 1 else "all"
+    if stage == "1-2":
+        test_pipeline(n_bins=50)
+    elif stage == "3":
+        test_stage3(n_bins=50)
+    else:
+        test_stage3(n_bins=50)

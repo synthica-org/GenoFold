@@ -18,8 +18,9 @@ Usage
 Stages currently implemented:
   1. Preprocess  — Hi-C normalization, NGS correction, metadata encoding
   2. Represent   — graph construction, sequence embeddings, PyG Data assembly
+  3. Infer       — GNN encoder + Transformer for latent embeddings
 
-Stages 3-6 (Infer, Reconstruct, Score, Explain) will be added incrementally.
+Stages 4-6 (Reconstruct, Score, Explain) will be added incrementally.
 """
 
 from __future__ import annotations
@@ -33,6 +34,7 @@ import pandas as pd
 
 from genofold.preprocess import preprocess_hic, preprocess_metadata, preprocess_ngs
 from genofold.represent import build_pyg_data, compute_sequence_embeddings
+from genofold.infer import GenoFoldInferenceModel, InferenceOutput, get_device
 
 logging.basicConfig(
     level=logging.INFO,
@@ -44,7 +46,7 @@ logger = logging.getLogger("genofold.pipeline")
 
 @dataclass
 class PipelineConfig:
-    """All hyperparameters for stages 1 and 2."""
+    """All hyperparameters for stages 1, 2, and 3."""
 
     # -- Resolution --
     bin_size: int = 40_000          # Hi-C resolution in bp
@@ -193,3 +195,43 @@ class GenoFoldPipeline:
 
         logger.info("Pipeline stages 1-2 complete ✓")
         return data
+
+    def infer(self, data, hidden_dim: int = 64):
+        """
+        Run stage 3 (Infer) on a PyG Data object from stage 2.
+
+        Parameters
+        ----------
+        data:
+            PyG Data object returned by pipeline.run().
+        hidden_dim:
+            Latent embedding dimension (default 64).
+
+        Returns
+        -------
+        InferenceOutput
+            Contains .embeddings (M, hidden_dim) and .gnn_embeddings (M, hidden_dim).
+        """
+        logger.info("── Stage 3: Infer ──")
+
+        device = get_device()
+        input_dim = data.x.shape[1]
+
+        model = GenoFoldInferenceModel(
+            input_dim=input_dim,
+            hidden_dim=hidden_dim,
+            edge_dim=data.edge_attr.shape[1],
+        ).to(device)
+        model.eval()
+
+        # Move data to device
+        data = data.to(device)
+
+        with torch.no_grad():
+            output = model(data)
+
+        logger.info(
+            f"Stage 3 complete ✓ | "
+            f"embeddings shape: {output.embeddings.shape}"
+        )
+        return output, model
