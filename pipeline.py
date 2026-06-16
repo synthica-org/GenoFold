@@ -30,7 +30,6 @@ from dataclasses import dataclass, field
 from typing import List, Optional
 
 import torch
-
 import numpy as np
 import pandas as pd
 
@@ -235,5 +234,57 @@ class GenoFoldPipeline:
         logger.info(
             f"Stage 3 complete ✓ | "
             f"embeddings shape: {output.embeddings.shape}"
+        )
+        return output, model
+
+    def reconstruct(
+        self,
+        inference_output,
+        hidden_dim: int = 64,
+        export_dir: str = None,
+        chrom: str = "chr1",
+    ):
+        """
+        Run stage 4 (Reconstruct) on InferenceOutput from stage 3.
+
+        Parameters
+        ----------
+        inference_output:
+            InferenceOutput returned by pipeline.infer().
+        hidden_dim:
+            Must match the hidden_dim used in pipeline.infer().
+        export_dir:
+            If provided, saves .npy, .pdb, and .tsv files here.
+        chrom:
+            Chromosome name for export metadata.
+
+        Returns
+        -------
+        (ReconstructionOutput, GenoFoldReconstructModel)
+        """
+        from genofold.reconstruct import GenoFoldReconstructModel
+
+        logger.info("── Stage 4: Reconstruct ──")
+
+        device = next(iter([inference_output.embeddings.device]))
+
+        model = GenoFoldReconstructModel(
+            hidden_dim=hidden_dim,
+            use_stress_mds=True,
+            mds_iter=100,
+        ).to(inference_output.embeddings.device)
+        model.eval()
+
+        with torch.no_grad():
+            output = model(
+                inference_output,
+                export_dir=export_dir,
+                bin_size=self.config.bin_size,
+                chrom=chrom,
+            )
+
+        logger.info(
+            f"Stage 4 complete ✓ | "
+            f"coordinates: {tuple(output.coordinates.shape)}"
         )
         return output, model
