@@ -104,9 +104,9 @@ GenoFold will be evaluated against established methods across complementary dime
 
 | Method | Evaluation Focus |
 |--------|-------------------|
-| [**HiC-GNN**](https://github.com/ma-compbio/HiC-GNN) | Graph learning and cross-dataset transfer capabilities |
-| [**FLAMINGO**](https://github.com/ma-compbio/FLAMINGO) | Robustness to sparse data and high-resolution reconstruction |
-| [**3DMax**](https://github.com/ma-compbio/3DMax) | Classic maximum-likelihood, distance-based baseline |
+| [**HiC-GNN**](pubmed.ncbi.nlm.nih) | Graph learning and cross-dataset transfer capabilities |
+| [**FLAMINGO**](https://www.nature.com/articles/s41467-022-30270-2) | Robustness to sparse data and high-resolution reconstruction |
+| [**3DMax**](https://github.com/BDM-Lab/3DMax) | Classic maximum-likelihood, distance-based baseline |
 
 ---
 
