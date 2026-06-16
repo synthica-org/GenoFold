@@ -200,3 +200,69 @@ if __name__ == "__main__":
         test_stage3(n_bins=50)
     else:
         test_stage3(n_bins=50)
+
+
+def test_stage4(n_bins: int = 50):
+    """Test stage 4 (Reconstruct) — distance predictor + decoder + MDS + fusion."""
+    import torch, os
+    logger.info("Running stage 4 test...")
+
+    # Run stages 1-3 first
+    inference_output, infer_model = test_stage3(n_bins=n_bins)
+
+    from pipeline import GenoFoldPipeline, PipelineConfig
+    config = PipelineConfig(bin_size=40_000, top_k_edges=10)
+    pipeline = GenoFoldPipeline(config=config)
+
+    export_dir = "outputs/test"
+    recon_output, recon_model = pipeline.reconstruct(
+        inference_output,
+        hidden_dim=64,
+        export_dir=export_dir,
+        chrom="chr1",
+    )
+
+    # Assertions
+    M = inference_output.num_nodes
+    assert recon_output.coordinates is not None,                      "Coordinates must not be None"
+    assert recon_output.coordinates.shape == (M, 3),                  f"Expected ({M}, 3), got {recon_output.coordinates.shape}"
+    assert recon_output.distance_matrix.shape == (M, M),              "Distance matrix shape mismatch"
+    assert recon_output.decoder_coords.shape == (M, 3),               "Decoder coords shape mismatch"
+    assert recon_output.mds_coords.shape == (M, 3),                   "MDS coords shape mismatch"
+    assert not recon_output.coordinates.isnan().any(),                 "Coordinates contain NaN"
+    assert not recon_output.distance_matrix.isnan().any(),             "Distance matrix contains NaN"
+    assert (recon_output.distance_matrix >= 0).all(),                  "Distances must be non-negative"
+
+    # Check export files exist
+    assert os.path.exists(recon_output.export_paths["npy"]), ".npy file not found"
+    assert os.path.exists(recon_output.export_paths["pdb"]), ".pdb file not found"
+    assert os.path.exists(recon_output.export_paths["tsv"]), ".tsv file not found"
+
+    total_params = sum(p.numel() for p in recon_model.parameters() if p.requires_grad)
+
+    logger.info("")
+    logger.info("═" * 55)
+    logger.info("  GenoFold stage 4: ALL ASSERTIONS PASSED ✓")
+    logger.info("═" * 55)
+    logger.info(f"  Coordinates shape:   {tuple(recon_output.coordinates.shape)}")
+    logger.info(f"  Distance matrix:     {tuple(recon_output.distance_matrix.shape)}")
+    logger.info(f"  Coord range:         [{recon_output.coordinates.min():.3f}, {recon_output.coordinates.max():.3f}]")
+    logger.info(f"  Model parameters:    {total_params:,}")
+    logger.info(f"  Output .npy:         {recon_output.export_paths['npy']}")
+    logger.info(f"  Output .pdb:         {recon_output.export_paths['pdb']}")
+    logger.info(f"  Output .tsv:         {recon_output.export_paths['tsv']}")
+    logger.info("═" * 55)
+    return recon_output, recon_model
+
+
+if __name__ == "__main__":
+    import sys
+    stage = sys.argv[1] if len(sys.argv) > 1 else "all"
+    if stage == "1-2":
+        test_pipeline(n_bins=50)
+    elif stage == "3":
+        test_stage3(n_bins=50)
+    elif stage == "4":
+        test_stage4(n_bins=50)
+    else:
+        test_stage4(n_bins=50)
