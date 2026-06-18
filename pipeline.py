@@ -347,3 +347,63 @@ class GenoFoldPipeline:
             f"{len(output.regions)} regions detected"
         )
         return output, model
+
+    def explain(
+        self,
+        infer_model,
+        recon_model,
+        data,
+        inference_output,
+        reconstruction_output,
+        score_output=None,
+        output_dir: str = "outputs/explain",
+        ig_steps: int = 50,
+        top_k_loci: int = 10,
+    ):
+        """
+        Run stage 6 (Explain) on outputs from stages 2-5.
+
+        Parameters
+        ----------
+        infer_model:
+            Trained GenoFoldInferenceModel from pipeline.infer().
+        recon_model:
+            Trained GenoFoldReconstructModel from pipeline.reconstruct().
+        data:
+            PyG Data object from pipeline.run().
+        inference_output:
+            InferenceOutput from pipeline.infer().
+        reconstruction_output:
+            ReconstructionOutput from pipeline.reconstruct().
+        score_output:
+            Optional ScoringOutput from pipeline.score().
+        output_dir:
+            Directory to save all figures (static PNG + interactive HTML).
+        ig_steps:
+            Integrated Gradients interpolation steps.
+        top_k_loci:
+            Number of top influential bins to highlight.
+
+        Returns
+        -------
+        (ExplanationOutput, GenoFoldExplainModel)
+        """
+        from genofold.explain import GenoFoldExplainModel
+
+        logger.info("── Stage 6: Explain ──")
+
+        explainer = GenoFoldExplainModel(ig_steps=ig_steps, top_k_loci=top_k_loci)
+        output = explainer.explain(
+            infer_model=infer_model,
+            recon_model=recon_model,
+            data=data,
+            inference_output=inference_output,
+            reconstruction_output=reconstruction_output,
+            score_output=score_output,
+            output_dir=output_dir,
+        )
+
+        logger.info(
+            f"Stage 6 complete ✓ | {len(output.figure_paths)} figures generated"
+        )
+        return output, explainer

@@ -267,10 +267,64 @@ def test_stage5(n_bins: int = 50):
     return score_output, score_model
 
 
+# ── Stage 6: Explain ──────────────────────────────────────────────────────────
+
+def test_stage6(n_bins: int = 50):
+    logger.info("Running stage 6 test...")
+    (recon_output, recon_model, inference_output,
+     infer_model, data, pipeline) = test_stage4(n_bins=n_bins)
+
+    score_output, score_model = pipeline.score(
+        inference_output,
+        recon_output,
+        data.edge_index,
+        reconstruct_model=recon_model,
+        hidden_dim=64,
+        n_mc_samples=5,
+        use_mc_dropout=True,
+    )
+
+    explain_output, explainer = pipeline.explain(
+        infer_model,
+        recon_model,
+        data,
+        inference_output,
+        recon_output,
+        score_output=score_output,
+        output_dir="outputs/explain",
+        ig_steps=20,   # Small for fast testing
+        top_k_loci=10,
+    )
+
+    M = inference_output.num_nodes
+    assert explain_output.feature_attributions.shape == data.x.shape
+    assert not explain_output.feature_attributions.isnan().any()
+    assert len(explain_output.group_attributions) > 0
+    assert explain_output.transformer_attention.shape == (M, M)
+    assert explain_output.influence_score.shape == (M,)
+    assert not explain_output.influence_score.isnan().any()
+    assert len(explain_output.figure_paths) > 0
+    for name, path in explain_output.figure_paths.items():
+        assert os.path.exists(path), f"Missing figure: {name} -> {path}"
+
+    logger.info("")
+    logger.info("═" * 55)
+    logger.info("  GenoFold stage 6: ALL ASSERTIONS PASSED ✓")
+    logger.info("═" * 55)
+    logger.info(f"  Attribution shape:     {tuple(explain_output.feature_attributions.shape)}")
+    logger.info(f"  Feature groups:        {list(explain_output.group_attributions.keys())}")
+    logger.info(f"  Transformer attn:      {tuple(explain_output.transformer_attention.shape)}")
+    logger.info(f"  Figures generated:     {len(explain_output.figure_paths)}")
+    for name, path in explain_output.figure_paths.items():
+        logger.info(f"    {name}: {path}")
+    logger.info("═" * 55)
+    return explain_output, explainer
+
+
 # ── Entry point ───────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
-    stage = sys.argv[1] if len(sys.argv) > 1 else "5"
+    stage = sys.argv[1] if len(sys.argv) > 1 else "6"
 
     if stage == "1-2":
         test_stages_1_2(n_bins=50)
@@ -280,5 +334,7 @@ if __name__ == "__main__":
         test_stage4(n_bins=50)
     elif stage == "5":
         test_stage5(n_bins=50)
+    elif stage == "6":
+        test_stage6(n_bins=50)
     else:
-        test_stage5(n_bins=50)
+        test_stage6(n_bins=50)
