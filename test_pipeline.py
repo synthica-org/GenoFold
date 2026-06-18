@@ -1,17 +1,22 @@
 """
 test_pipeline.py
 ----------------
-Synthetic end-to-end smoke test for GenoFold stages 1 and 2.
+Synthetic end-to-end smoke test for GenoFold stages 1-5.
 
 Generates realistic synthetic data (Hi-C matrix, NGS coverage,
 DNA sequences, metadata) and runs the full pipeline to confirm
-that a valid PyG Data object is produced.
+that every stage produces valid, well-shaped outputs.
 
 Run with:
-    python test_pipeline.py
+    python3 test_pipeline.py          # runs all stages 1-5
+    python3 test_pipeline.py 1-2      # runs only stages 1-2
+    python3 test_pipeline.py 3        # runs stages 1-3
+    python3 test_pipeline.py 4        # runs stages 1-4
+    python3 test_pipeline.py 5        # runs stages 1-5
 """
 
 import logging
+import os
 import sys
 
 import numpy as np
@@ -23,6 +28,7 @@ logging.basicConfig(
     datefmt="%H:%M:%S",
 )
 logger = logging.getLogger("genofold.test")
+
 
 # ── Synthetic data generation ────────────────────────────────────────────────
 
@@ -36,7 +42,6 @@ def make_synthetic_hic(n_bins: int, seed: int = 42) -> np.ndarray:
     rng = np.random.default_rng(seed)
     matrix = np.zeros((n_bins, n_bins), dtype=np.float32)
 
-    # Distance decay: contact_freq ~ 1 / (1 + distance)
     for i in range(n_bins):
         for j in range(i, n_bins):
             dist = abs(i - j)
@@ -45,13 +50,11 @@ def make_synthetic_hic(n_bins: int, seed: int = 42) -> np.ndarray:
             matrix[i, j] = count
             matrix[j, i] = count
 
-    # Add 3 TAD-like blocks (elevated contact frequency within blocks)
     tad_boundaries = [0, n_bins // 3, 2 * n_bins // 3, n_bins]
     for start, end in zip(tad_boundaries[:-1], tad_boundaries[1:]):
         block = matrix[start:end, start:end]
         block += rng.poisson(lam=20, size=block.shape).astype(np.float32)
 
-    # Symmetrize
     matrix = (matrix + matrix.T) / 2.0
     np.fill_diagonal(matrix, 0)
     return matrix
@@ -59,23 +62,16 @@ def make_synthetic_hic(n_bins: int, seed: int = 42) -> np.ndarray:
 
 def make_synthetic_coverage(n_bins: int, seed: int = 0) -> np.ndarray:
     rng = np.random.default_rng(seed)
-    # Most bins have moderate coverage; some are low (unmappable)
     coverage = rng.negative_binomial(n=5, p=0.3, size=n_bins).astype(np.float32)
-    # Zero out ~5% of bins to simulate unmappable regions
     zero_idx = rng.choice(n_bins, size=n_bins // 20, replace=False)
     coverage[zero_idx] = 0.0
     return coverage
 
 
 def make_synthetic_sequences(n_bins: int, bin_size: int = 200, seed: int = 1) -> list:
-    """Generate random DNA sequences (short for testing)."""
     rng = np.random.default_rng(seed)
     bases = list("ACGT")
-    sequences = []
-    for _ in range(n_bins):
-        seq = "".join(rng.choice(bases, size=bin_size))
-        sequences.append(seq)
-    return sequences
+    return ["".join(rng.choice(bases, size=bin_size)) for _ in range(n_bins)]
 
 
 def make_synthetic_metadata(n_bins: int) -> pd.DataFrame:
@@ -86,18 +82,18 @@ def make_synthetic_metadata(n_bins: int) -> pd.DataFrame:
             "bin_id": i,
             "species": species_pool[i % len(species_pool)],
             "gc_content": 0.35 + 0.1 * np.sin(i / n_bins * np.pi),
-            "mappability": 0.7 + 0.2 * (i % 5 != 0),  # Every 5th bin is lower
+            "mappability": 0.7 + 0.2 * (i % 5 != 0),
             "chromatin_state": "Tx" if i % 3 == 0 else ("Enh" if i % 3 == 1 else "Het"),
         })
     return pd.DataFrame(rows)
 
 
-# ── Test ─────────────────────────────────────────────────────────────────────
+# ── Stage 1-2: Preprocess + Represent ────────────────────────────────────────
 
-def test_pipeline(n_bins: int = 50):
+def test_stages_1_2(n_bins: int = 50):
     logger.info(f"Generating synthetic data: {n_bins} bins")
 
-    matrix   = make_synthetic_hic(n_bins)
+    matrix = make_synthetic_hic(n_bins)
     coverage = make_synthetic_coverage(n_bins)
     sequences = make_synthetic_sequences(n_bins)
     metadata_df = make_synthetic_metadata(n_bins)
@@ -107,15 +103,11 @@ def test_pipeline(n_bins: int = 50):
     logger.info(f"  Sequences:           {len(sequences)} bins")
     logger.info(f"  Metadata shape:      {metadata_df.shape}")
 
-    try:
-        from pipeline import GenoFoldPipeline, PipelineConfig
-    except ImportError as e:
-        logger.error(f"Import failed: {e}")
-        sys.exit(1)
+    from pipeline import GenoFoldPipeline, PipelineConfig
 
     config = PipelineConfig(
         bin_size=40_000,
-        top_k_edges=10,        # Keep graphs manageable in tests
+        top_k_edges=10,
         denoise_sigma=0.5,
         sparse_threshold=0.05,
         kmer_k=4,
@@ -129,15 +121,14 @@ def test_pipeline(n_bins: int = 50):
         metadata_df=metadata_df,
     )
 
-    # ── Assertions ────────────────────────────────────────────────────────────
-    assert data.x is not None,                      "Node features must not be None"
-    assert data.edge_index is not None,             "Edge index must not be None"
-    assert data.x.shape[0] == data.num_nodes,       "Node count mismatch"
-    assert data.edge_index.shape[0] == 2,           "edge_index must have shape (2, E)"
-    assert data.edge_attr.shape[1] == 2,            "edge_attr must have 2 features"
-    assert data.species_ids.shape[0] == data.num_nodes, "species_ids length mismatch"
-    assert not data.x.isnan().any(),                "Node features contain NaN"
-    assert not data.edge_attr.isnan().any(),        "Edge features contain NaN"
+    assert data.x is not None
+    assert data.edge_index is not None
+    assert data.x.shape[0] == data.num_nodes
+    assert data.edge_index.shape[0] == 2
+    assert data.edge_attr.shape[1] == 2
+    assert data.species_ids.shape[0] == data.num_nodes
+    assert not data.x.isnan().any()
+    assert not data.edge_attr.isnan().any()
 
     logger.info("")
     logger.info("═" * 55)
@@ -149,34 +140,23 @@ def test_pipeline(n_bins: int = 50):
     logger.info(f"  Edge feat. dim:  {data.edge_attr.shape[1]}")
     logger.info(f"  Species IDs:     {data.species_ids.unique().tolist()}")
     logger.info("═" * 55)
-    return data
+    return data, pipeline
 
 
-if __name__ == "__main__":
-    test_pipeline(n_bins=50)
-
+# ── Stage 3: Infer ───────────────────────────────────────────────────────────
 
 def test_stage3(n_bins: int = 50):
-    """Test stage 3 (Infer) — GNN + Transformer."""
-    import torch
     logger.info("Running stage 3 test...")
-
-    # Run stages 1-2 first to get the Data object
-    data = test_pipeline(n_bins=n_bins)
-
-    from pipeline import GenoFoldPipeline, PipelineConfig
-    config = PipelineConfig(bin_size=40_000, top_k_edges=10)
-    pipeline = GenoFoldPipeline(config=config)
+    data, pipeline = test_stages_1_2(n_bins=n_bins)
 
     output, model = pipeline.infer(data, hidden_dim=64)
 
-    # Assertions
-    assert output.embeddings is not None,                        "Embeddings must not be None"
-    assert output.embeddings.shape[0] == data.num_nodes,        "Node count mismatch"
-    assert output.embeddings.shape[1] == 64,                    "Hidden dim mismatch"
-    assert output.gnn_embeddings.shape == output.embeddings.shape, "GNN/final shape mismatch"
-    assert not output.embeddings.isnan().any(),                  "Embeddings contain NaN"
-    assert not output.gnn_embeddings.isnan().any(),              "GNN embeddings contain NaN"
+    assert output.embeddings is not None
+    assert output.embeddings.shape[0] == data.num_nodes
+    assert output.embeddings.shape[1] == 64
+    assert output.gnn_embeddings.shape == output.embeddings.shape
+    assert not output.embeddings.isnan().any()
+    assert not output.gnn_embeddings.isnan().any()
 
     total_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
 
@@ -188,31 +168,14 @@ def test_stage3(n_bins: int = 50):
     logger.info(f"  GNN emb shape:     {tuple(output.gnn_embeddings.shape)}")
     logger.info(f"  Model parameters:  {total_params:,}")
     logger.info("═" * 55)
-    return output, model
+    return output, model, data, pipeline
 
 
-if __name__ == "__main__":
-    import sys
-    stage = sys.argv[1] if len(sys.argv) > 1 else "all"
-    if stage == "1-2":
-        test_pipeline(n_bins=50)
-    elif stage == "3":
-        test_stage3(n_bins=50)
-    else:
-        test_stage3(n_bins=50)
-
+# ── Stage 4: Reconstruct ─────────────────────────────────────────────────────
 
 def test_stage4(n_bins: int = 50):
-    """Test stage 4 (Reconstruct) — distance predictor + decoder + MDS + fusion."""
-    import torch, os
     logger.info("Running stage 4 test...")
-
-    # Run stages 1-3 first
-    inference_output, infer_model = test_stage3(n_bins=n_bins)
-
-    from pipeline import GenoFoldPipeline, PipelineConfig
-    config = PipelineConfig(bin_size=40_000, top_k_edges=10)
-    pipeline = GenoFoldPipeline(config=config)
+    inference_output, infer_model, data, pipeline = test_stage3(n_bins=n_bins)
 
     export_dir = "outputs/test"
     recon_output, recon_model = pipeline.reconstruct(
@@ -222,21 +185,18 @@ def test_stage4(n_bins: int = 50):
         chrom="chr1",
     )
 
-    # Assertions
     M = inference_output.num_nodes
-    assert recon_output.coordinates is not None,                      "Coordinates must not be None"
-    assert recon_output.coordinates.shape == (M, 3),                  f"Expected ({M}, 3), got {recon_output.coordinates.shape}"
-    assert recon_output.distance_matrix.shape == (M, M),              "Distance matrix shape mismatch"
-    assert recon_output.decoder_coords.shape == (M, 3),               "Decoder coords shape mismatch"
-    assert recon_output.mds_coords.shape == (M, 3),                   "MDS coords shape mismatch"
-    assert not recon_output.coordinates.isnan().any(),                 "Coordinates contain NaN"
-    assert not recon_output.distance_matrix.isnan().any(),             "Distance matrix contains NaN"
-    assert (recon_output.distance_matrix >= 0).all(),                  "Distances must be non-negative"
-
-    # Check export files exist
-    assert os.path.exists(recon_output.export_paths["npy"]), ".npy file not found"
-    assert os.path.exists(recon_output.export_paths["pdb"]), ".pdb file not found"
-    assert os.path.exists(recon_output.export_paths["tsv"]), ".tsv file not found"
+    assert recon_output.coordinates is not None
+    assert recon_output.coordinates.shape == (M, 3)
+    assert recon_output.distance_matrix.shape == (M, M)
+    assert recon_output.decoder_coords.shape == (M, 3)
+    assert recon_output.mds_coords.shape == (M, 3)
+    assert not recon_output.coordinates.isnan().any()
+    assert not recon_output.distance_matrix.isnan().any()
+    assert (recon_output.distance_matrix >= 0).all()
+    assert os.path.exists(recon_output.export_paths["npy"])
+    assert os.path.exists(recon_output.export_paths["pdb"])
+    assert os.path.exists(recon_output.export_paths["tsv"])
 
     total_params = sum(p.numel() for p in recon_model.parameters() if p.requires_grad)
 
@@ -252,17 +212,73 @@ def test_stage4(n_bins: int = 50):
     logger.info(f"  Output .pdb:         {recon_output.export_paths['pdb']}")
     logger.info(f"  Output .tsv:         {recon_output.export_paths['tsv']}")
     logger.info("═" * 55)
-    return recon_output, recon_model
+    return recon_output, recon_model, inference_output, infer_model, data, pipeline
 
+
+# ── Stage 5: Score ───────────────────────────────────────────────────────────
+
+def test_stage5(n_bins: int = 50):
+    logger.info("Running stage 5 test...")
+    (recon_output, recon_model, inference_output,
+     infer_model, data, pipeline) = test_stage4(n_bins=n_bins)
+
+    score_output, score_model = pipeline.score(
+        inference_output,
+        recon_output,
+        data.edge_index,
+        reconstruct_model=recon_model,
+        hidden_dim=64,
+        n_mc_samples=5,   # Small for fast testing
+        use_mc_dropout=True,
+    )
+
+    M = inference_output.num_nodes
+    assert score_output.bin_confidence.shape == (M,)
+    assert (score_output.bin_confidence >= 0).all()
+    assert (score_output.bin_confidence <= 1).all()
+    assert not score_output.bin_confidence.isnan().any()
+    assert len(score_output.regions) > 0
+    assert score_output.uncertainty.radius.shape == (M,)
+    assert not score_output.uncertainty.radius.isnan().any()
+    assert (score_output.uncertainty.radius >= 0).all()
+
+    # Re-export structure with REAL confidence scores in the PDB B-factor column
+    from genofold.reconstruct.export import export_structure
+    export_paths = export_structure(
+        coords=recon_output.coordinates,
+        output_dir="outputs/test",
+        prefix="genofold_structure_scored",
+        bin_size=40_000,
+        chrom="chr1",
+        confidence=score_output.bin_confidence,
+    )
+
+    logger.info("")
+    logger.info("═" * 55)
+    logger.info("  GenoFold stage 5: ALL ASSERTIONS PASSED ✓")
+    logger.info("═" * 55)
+    logger.info(f"  Bin confidence shape:  {tuple(score_output.bin_confidence.shape)}")
+    logger.info(f"  Mean confidence:       {score_output.bin_confidence.mean():.3f}")
+    logger.info(f"  Regions detected:      {len(score_output.regions)}")
+    logger.info(f"  Mean uncertainty:      {score_output.uncertainty.radius.mean():.4f}")
+    logger.info(f"  Max uncertainty:       {score_output.uncertainty.radius.max():.4f}")
+    logger.info(f"  Scored .pdb:           {export_paths['pdb']}")
+    logger.info("═" * 55)
+    return score_output, score_model
+
+
+# ── Entry point ───────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
-    import sys
-    stage = sys.argv[1] if len(sys.argv) > 1 else "all"
+    stage = sys.argv[1] if len(sys.argv) > 1 else "5"
+
     if stage == "1-2":
-        test_pipeline(n_bins=50)
+        test_stages_1_2(n_bins=50)
     elif stage == "3":
         test_stage3(n_bins=50)
     elif stage == "4":
         test_stage4(n_bins=50)
+    elif stage == "5":
+        test_stage5(n_bins=50)
     else:
-        test_stage4(n_bins=50)
+        test_stage5(n_bins=50)
