@@ -288,3 +288,62 @@ class GenoFoldPipeline:
             f"coordinates: {tuple(output.coordinates.shape)}"
         )
         return output, model
+
+    def score(
+        self,
+        inference_output,
+        reconstruction_output,
+        edge_index,
+        reconstruct_model=None,
+        hidden_dim: int = 64,
+        n_mc_samples: int = 20,
+        use_mc_dropout: bool = True,
+    ):
+        """
+        Run stage 5 (Score) on outputs from stages 3 and 4.
+
+        Parameters
+        ----------
+        inference_output:
+            InferenceOutput from pipeline.infer().
+        reconstruction_output:
+            ReconstructionOutput from pipeline.reconstruct().
+        edge_index:
+            data.edge_index from the stage 2 PyG Data object.
+        reconstruct_model:
+            Stage 4 model instance (needed for MC dropout uncertainty).
+        hidden_dim:
+            Must match hidden_dim used in stage 3.
+        n_mc_samples:
+            Number of Monte Carlo dropout samples.
+        use_mc_dropout:
+            Whether to compute MC dropout uncertainty (slower, more accurate).
+
+        Returns
+        -------
+        (ScoringOutput, GenoFoldScoreModel)
+        """
+        from genofold.score import GenoFoldScoreModel
+
+        logger.info("── Stage 5: Score ──")
+
+        model = GenoFoldScoreModel(
+            hidden_dim=hidden_dim,
+            n_mc_samples=n_mc_samples,
+            use_mc_dropout=use_mc_dropout,
+        ).to(inference_output.embeddings.device)
+        model.eval()
+
+        output = model(
+            inference_output,
+            reconstruction_output,
+            edge_index,
+            reconstruct_model=reconstruct_model,
+        )
+
+        logger.info(
+            f"Stage 5 complete ✓ | "
+            f"mean confidence={output.bin_confidence.mean():.3f} | "
+            f"{len(output.regions)} regions detected"
+        )
+        return output, model
