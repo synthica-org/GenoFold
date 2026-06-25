@@ -53,7 +53,7 @@ class PipelineConfig:
     bin_size: int = 40_000          # Hi-C resolution in bp
 
     # -- Hi-C preprocessing --
-    zero_fraction_threshold: float = 0.8
+    zero_fraction_threshold: float = 0.97
     min_coverage: float = 0.0
     ice_max_iter: int = 100
     ice_tolerance: float = 1e-5
