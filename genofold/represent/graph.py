@@ -92,7 +92,14 @@ def build_edge_index(
     genomic_dist = np.abs(rows.astype(np.float32) - cols.astype(np.float32))
     log_dist = np.log1p(genomic_dist)
     # Normalize to [0, 1]
-    if log_dist.max() > 0:
+    if len(log_dist) == 0:
+        logger.warning(
+            "No edges found! This usually means contact_threshold or "
+            "sparse_threshold filtered out all contacts. Try lowering "
+            "--contact-threshold or --sparse-threshold, or check that "
+            "your Hi-C matrix has nonzero values after preprocessing."
+        )
+    elif log_dist.max() > 0:
         log_dist /= log_dist.max()
 
     edge_index = torch.tensor(np.stack([src, dst], axis=0), dtype=torch.long)

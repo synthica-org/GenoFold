@@ -69,6 +69,118 @@ def load_cool(
     return matrix
 
 
+def load_hic(
+    path: Union[str, Path],
+    resolution: int,
+    chrom: str,
+    normalization: str = "KR",
+) -> np.ndarray:
+    """
+    Load a Hi-C contact matrix from a Juicer .hic file.
+
+    Requires the 'hic-straw' package (imports as 'hicstraw'):
+        pip install hic-straw
+
+    Parameters
+    ----------
+    path:
+        Path to the .hic file (local path or URL).
+    resolution:
+        Resolution in bp. Must already exist in the .hic file
+        (common values: 2500000, 1000000, 500000, 100000, 50000,
+        25000, 10000, 5000).
+    chrom:
+        Chromosome name (e.g. 'chr1' or '1', depending on the file's
+        naming convention — check with hicstraw.HiCFile(path).getChromosomes()).
+    normalization:
+        Normalization method: 'NONE', 'VC', 'VC_SQRT', 'KR', or 'SCALE'.
+        'KR' (Knight-Ruiz) is the standard choice, equivalent to ICE.
+
+    Returns
+    -------
+    np.ndarray
+        Dense contact matrix of shape (N, N), dtype float32.
+    """
+    try:
+        import hicstraw
+    except ImportError:
+        raise ImportError(
+            "Install hic-straw to load .hic files: pip install hic-straw"
+        )
+
+    hic_file = hicstraw.HiCFile(str(path))
+    available_chroms = [c.name for c in hic_file.getChromosomes()]
+    logger.info(
+        f"Loaded .hic file: genome={hic_file.getGenomeID()}, "
+        f"chromosomes={available_chroms}"
+    )
+
+    # Auto-strip 'chr' prefix if the file doesn't use it (common in hg19 .hic files)
+    if chrom not in available_chroms:
+        stripped = chrom.replace("chr", "")
+        if stripped in available_chroms:
+            logger.warning(
+                f"Chromosome '{chrom}' not found, but '{stripped}' is. "
+                f"Using '{stripped}' instead. This file does not use 'chr' prefixes."
+            )
+            chrom = stripped
+        else:
+            raise ValueError(
+                f"Chromosome '{chrom}' not found. Available: {available_chroms}"
+            )
+
+    chrom_obj = next(
+        (c for c in hic_file.getChromosomes() if c.name == chrom), None
+    )
+
+    # Try normalizations in order of preference, falling back gracefully
+    # if the requested one wasn't computed for this resolution
+    norm_candidates = [normalization, "KR", "SCALE", "VC_SQRT", "VC", "NONE"]
+    norm_candidates = list(dict.fromkeys(norm_candidates))  # de-duplicate, keep order
+
+    matrix_zoom_data = None
+    used_norm = None
+    for norm in norm_candidates:
+        try:
+            matrix_zoom_data = hic_file.getMatrixZoomData(
+                chrom, chrom, "observed", norm, "BP", resolution
+            )
+            used_norm = norm
+            break
+        except Exception as e:
+            logger.warning(f"Normalization '{norm}' unavailable at {resolution:,} bp ({e}) — trying next...")
+
+    if matrix_zoom_data is None:
+        raise ValueError(
+            f"No normalization vector available for chrom={chrom} at "
+            f"resolution={resolution:,} bp. Try a different --res "
+            f"(e.g. 50000, 250000, 1000000) or check available resolutions "
+            f"with hicstraw.HiCFile(path).getResolutions()."
+        )
+
+    if used_norm != normalization:
+        logger.warning(
+            f"Requested normalization '{normalization}' was unavailable — "
+            f"used '{used_norm}' instead."
+        )
+
+    n_bins = int(np.ceil(chrom_obj.length / resolution))
+
+    # getRecordsAsMatrix returns a dense numpy array directly
+    matrix = matrix_zoom_data.getRecordsAsMatrix(
+        0, chrom_obj.length, 0, chrom_obj.length
+    ).astype(np.float32)
+
+    # Replace NaNs (common in sparse/low-coverage regions) with 0
+    matrix = np.nan_to_num(matrix, nan=0.0)
+
+    logger.info(
+        f"Contact matrix loaded from .hic: shape={matrix.shape}, "
+        f"resolution={resolution:,} bp, normalization={normalization}"
+    )
+    return matrix
+
+
 def load_contact_matrix_npy(path: Union[str, Path]) -> np.ndarray:
     """Load a raw contact matrix saved as a .npy file."""
     mat = np.load(path).astype(np.float32)

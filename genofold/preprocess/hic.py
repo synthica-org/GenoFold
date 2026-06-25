@@ -25,7 +25,7 @@ def filter_unmappable_bins(
     matrix: np.ndarray,
     coverage: Optional[np.ndarray] = None,
     min_coverage: float = 0.0,
-    zero_fraction_threshold: float = 0.8,
+    zero_fraction_threshold: float = 0.97,
 ) -> Tuple[np.ndarray, np.ndarray]:
     """
     Identify and mask unmappable or low-coverage bins.
@@ -225,7 +225,7 @@ def preprocess_hic(
     matrix: np.ndarray,
     coverage: Optional[np.ndarray] = None,
     min_coverage: float = 0.0,
-    zero_fraction_threshold: float = 0.8,
+    zero_fraction_threshold: float = 0.97,
     ice_max_iter: int = 100,
     ice_tolerance: float = 1e-5,
     ignore_diags: int = 2,
