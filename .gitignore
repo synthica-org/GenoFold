@@ -24,5 +24,6 @@ checkpoints/
 # Jupyter
 .ipynb_checkpoints/
 
-# Generated outputs
+# Raw data files (too large for GitHub)
+data/real/
 outputs/
