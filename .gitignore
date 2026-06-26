@@ -26,4 +26,5 @@ checkpoints/
 
 # Raw data files (too large for GitHub)
 data/real/
+data/reference/
 outputs/
