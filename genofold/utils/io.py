@@ -181,6 +181,84 @@ def load_hic(
     return matrix
 
 
+def load_bigwig_coverage(
+    path: Union[str, Path],
+    chrom: str,
+    chrom_start: int,
+    n_bins: int,
+    bin_size: int,
+) -> np.ndarray:
+    """
+    Extract per-bin coverage from a bigWig signal file (e.g. ENCODE
+    DNase-seq, ChIP-seq, or RNA-seq coverage tracks).
+
+    Requires the 'pyBigWig' package:
+        pip install pyBigWig
+
+    Parameters
+    ----------
+    path:
+        Path to the .bigWig file.
+    chrom:
+        Chromosome name matching the bigWig's naming convention
+        (check with pyBigWig.open(path).chroms() if unsure — ENCODE
+        bigWig files typically use 'chr22' style naming, matching UCSC).
+    chrom_start:
+        Start coordinate of the first bin in bp.
+    n_bins:
+        Number of bins to extract.
+    bin_size:
+        Bin size in bp (should match your Hi-C resolution).
+
+    Returns
+    -------
+    np.ndarray
+        (n_bins,) float32 array of mean signal per bin.
+    """
+    try:
+        import pyBigWig
+    except ImportError:
+        raise ImportError(
+            "Install pyBigWig to read bigWig coverage files: pip install pyBigWig"
+        )
+
+    bw = pyBigWig.open(str(path))
+
+    available_chroms = list(bw.chroms().keys())
+    if chrom not in available_chroms:
+        # Try stripping/adding 'chr' prefix to match naming convention
+        alt = chrom.replace("chr", "") if "chr" in chrom else f"chr{chrom}"
+        if alt in available_chroms:
+            logger.warning(
+                f"Chromosome '{chrom}' not found in bigWig, using '{alt}' instead."
+            )
+            chrom = alt
+        else:
+            raise ValueError(
+                f"Chromosome '{chrom}' not found in bigWig. "
+                f"Available: {available_chroms[:10]}..."
+            )
+
+    chrom_len = bw.chroms()[chrom]
+    coverage = np.zeros(n_bins, dtype=np.float32)
+
+    for i in range(n_bins):
+        start = chrom_start + i * bin_size
+        end = min(start + bin_size, chrom_len)
+        if start >= chrom_len:
+            break
+        mean_val = bw.stats(chrom, start, end, type="mean")[0]
+        coverage[i] = mean_val if mean_val is not None else 0.0
+
+    bw.close()
+
+    logger.info(
+        f"Loaded bigWig coverage: {n_bins} bins from {chrom}, "
+        f"mean={coverage.mean():.3f}, nonzero={np.count_nonzero(coverage)}/{n_bins}"
+    )
+    return coverage
+
+
 def load_contact_matrix_npy(path: Union[str, Path]) -> np.ndarray:
     """Load a raw contact matrix saved as a .npy file."""
     mat = np.load(path).astype(np.float32)

@@ -115,6 +115,13 @@ def parse_args():
              "are used (acceptable for pipeline testing).",
     )
     parser.add_argument(
+        "--bigwig",
+        default=None,
+        help="Optional: path to a bigWig signal file (e.g. ENCODE "
+             "DNase-seq) for real NGS coverage. If not provided, the "
+             "Hi-C row-sum is used as a coverage proxy.",
+    )
+    parser.add_argument(
         "--hidden-dim",
         type=int,
         default=64,
@@ -211,12 +218,23 @@ def main():
     matrix = matrix[:n_bins, :n_bins]
     logger.info(f"Contact matrix loaded and cropped: {matrix.shape}")
 
-    # ── Build per-bin coverage (diagonal of contact matrix as proxy) ──────────
-    # Without a BAM file, we use the row-sum of the Hi-C matrix as a
-    # coverage proxy. This is a standard approximation used in several
-    # published methods. Provide a real BAM file for more accurate results.
-    coverage = matrix.sum(axis=1).astype(np.float32)
-    logger.info(f"Coverage (Hi-C row-sum proxy): shape={coverage.shape}")
+    # ── Build per-bin NGS coverage ────────────────────────────────────────────
+    logger.info("\n── Loading NGS coverage ──")
+    if args.bigwig:
+        from genofold.utils.io import load_bigwig_coverage
+        coverage = load_bigwig_coverage(
+            args.bigwig, args.chrom, 0, n_bins, args.res
+        )
+        logger.info(f"Real NGS coverage loaded from {args.bigwig}")
+    else:
+        # Without a bigWig/BAM file, use the row-sum of the Hi-C matrix
+        # as a coverage proxy. This is a standard approximation used in
+        # several published methods, but is NOT real NGS data.
+        logger.warning(
+            "No bigWig provided — using Hi-C row-sum as a coverage proxy. "
+            "Pass --bigwig path/to/signal.bigWig for real NGS coverage."
+        )
+        coverage = matrix.sum(axis=1).astype(np.float32)
 
     # ── Build sequences ───────────────────────────────────────────────────────
     logger.info("\n── Building sequences ──")

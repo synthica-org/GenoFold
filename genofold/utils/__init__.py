@@ -1,6 +1,7 @@
 from .io import (
     load_cool,
     load_hic,
+    load_bigwig_coverage,
     load_contact_matrix_npy,
     load_coverage_npy,
     extract_coverage_from_bam,
@@ -16,6 +17,7 @@ from .real_metadata import (
 __all__ = [
     "load_cool",
     "load_hic",
+    "load_bigwig_coverage",
     "load_contact_matrix_npy",
     "load_coverage_npy",
     "extract_coverage_from_bam",
