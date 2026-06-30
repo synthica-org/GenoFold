@@ -1,0 +1,126 @@
+/* ==========================================================================
+   GenoFold — design tokens
+   Ink-dark instrument aesthetic. One accent (chromatin teal), confidence
+   reads in amber/coral only where it means something.
+   ========================================================================== */
+
+@font-face {
+  font-family: 'Fraunces';
+  src: url('https://cdn.jsdelivr.net/fontsource/fonts/fraunces:vf@latest/latin-wght-italic.woff2') format('woff2-variations');
+}
+
+:root {
+  /* surfaces */
+  --ink-0: #0a0d12;
+  --ink-1: #0f131a;
+  --ink-2: #151a23;
+  --ink-3: #1c222d;
+  --hairline: rgba(242, 239, 233, 0.08);
+  --hairline-strong: rgba(242, 239, 233, 0.16);
+
+  /* text */
+  --paper: #f2efe9;
+  --paper-dim: rgba(242, 239, 233, 0.62);
+  --paper-faint: rgba(242, 239, 233, 0.38);
+
+  /* accent: chromatin teal */
+  --teal: #4fb8a6;
+  --teal-dim: #357f73;
+  --teal-glow: rgba(79, 184, 166, 0.16);
+
+  /* confidence scale */
+  --amber: #e8a33d;
+  --coral: #e2675b;
+
+  /* type */
+  --serif: 'Fraunces', 'Iowan Old Style', ui-serif, Georgia, serif;
+  --sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --mono: 'JetBrains Mono', ui-monospace, 'SF Mono', monospace;
+
+  --radius-sm: 6px;
+  --radius: 10px;
+  --radius-lg: 18px;
+
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--ink-0);
+  color: var(--paper);
+  font-family: var(--sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  background-image:
+    radial-gradient(ellipse 80% 50% at 50% -10%, rgba(79, 184, 166, 0.07), transparent);
+  min-height: 100vh;
+}
+
+::selection {
+  background: var(--teal-glow);
+  color: var(--paper);
+}
+
+a { color: var(--teal); text-decoration: none; }
+a:hover { color: var(--paper); }
+
+h1, h2, h3 {
+  font-family: var(--serif);
+  font-weight: 500;
+  font-style: normal;
+  letter-spacing: -0.01em;
+  margin: 0;
+}
+
+p { margin: 0; line-height: 1.6; }
+
+code, .mono { font-family: var(--mono); }
+
+button {
+  font-family: var(--sans);
+  cursor: pointer;
+  border: none;
+  background: none;
+  color: inherit;
+}
+
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+a:focus-visible {
+  outline: 2px solid var(--teal);
+  outline-offset: 2px;
+}
+
+input, select {
+  font-family: var(--sans);
+  background: var(--ink-2);
+  border: 1px solid var(--hairline-strong);
+  color: var(--paper);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  font-size: 14px;
+}
+
+input:focus, select:focus {
+  border-color: var(--teal-dim);
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px; height: 1px;
+  overflow: hidden;
+  clip: rect(0,0,0,0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}

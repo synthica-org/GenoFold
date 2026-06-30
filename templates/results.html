@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>GenoFold — Results</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/tokens.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/results.css') }}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body data-job-id="{{ job_id }}">
+
+  <div class="results-shell">
+    <div class="topbar">
+      <div class="topbar-left">
+        <div class="wordmark">Geno<span>Fold</span></div>
+        <div class="topbar-dataset"><b id="ds-name">—</b> · <span id="ds-chrom">—</span> · <span id="ds-res">—</span> resolution</div>
+      </div>
+      <div class="topbar-actions">
+        <a href="/" class="btn-ghost">New Run</a>
+        <button class="btn-ghost" id="btn-export-pdb">Download .pdb</button>
+      </div>
+    </div>
+
+    <div class="viewport-col">
+      <div class="viewport">
+        <canvas id="structure-canvas"></canvas>
+
+        <div class="viewport-caption">
+          <div class="eyebrow">Reconstructed Structure</div>
+          <h2>3D Chromatin Fold</h2>
+        </div>
+
+        <div class="viewport-legend">
+          <span>Low Confidence</span>
+          <div class="legend-gradient"></div>
+          <span>High Confidence</span>
+        </div>
+
+        <div class="viewport-controls">
+          <button class="vctrl-btn" id="btn-reset-view" title="Reset view" aria-label="Reset view">&#8634;</button>
+          <button class="vctrl-btn" id="btn-spin" title="Toggle rotation" aria-label="Toggle rotation">&#9205;</button>
+        </div>
+      </div>
+
+      <div class="metric-strip">
+        <div class="metric">
+          <div class="label">Bins Resolved</div>
+          <div class="value" id="metric-bins">&mdash;</div>
+        </div>
+        <div class="metric">
+          <div class="label">Contacts</div>
+          <div class="value" id="metric-edges">&mdash;</div>
+        </div>
+        <div class="metric">
+          <div class="label">Mean Confidence</div>
+          <div class="value" id="metric-conf">&mdash;</div>
+        </div>
+        <div class="metric">
+          <div class="label">Mean Uncertainty</div>
+          <div class="value" id="metric-unc">&mdash;<span class="unit">radius</span></div>
+        </div>
+      </div>
+    </div>
+
+    <aside class="sidebar">
+      <div class="side-section">
+        <h3>Structural Domains</h3>
+        <div id="regions-list"></div>
+      </div>
+
+      <div class="side-section">
+        <h3>Feature Contribution</h3>
+        <div id="feature-list"></div>
+      </div>
+
+      <div class="side-section">
+        <h3>Influential Loci</h3>
+        <div class="loci-chips" id="loci-chips"></div>
+      </div>
+
+      <div class="side-section">
+        <h3>Export</h3>
+        <div class="dl-row"><span>Coordinates</span> <a id="dl-pdb" href="#">.pdb</a></div>
+        <div class="dl-row"><span>Array</span> <a id="dl-npy" href="#">.npy</a></div>
+        <div class="dl-row"><span>Table</span> <a id="dl-tsv" href="#">.tsv</a></div>
+      </div>
+    </aside>
+
+    <section class="explain-strip">
+      <div class="explain-head">
+        <h2>Explainability</h2>
+        <p>Interactive figures from stage six: feature attribution, attention weights, and structural confidence.</p>
+      </div>
+      <div class="figure-grid">
+        <div class="figure-card">
+          <div class="figure-card-head">
+            <span class="title">Feature Group Importance</span>
+            <a class="open-link" id="open-feat" href="#" target="_blank">open &#8599;</a>
+          </div>
+          <iframe class="figure-frame" id="frame-feat"></iframe>
+        </div>
+        <div class="figure-card">
+          <div class="figure-card-head">
+            <span class="title">Transformer Self-Attention</span>
+            <a class="open-link" id="open-attn" href="#" target="_blank">open &#8599;</a>
+          </div>
+          <iframe class="figure-frame" id="frame-attn"></iframe>
+        </div>
+        <div class="figure-card">
+          <div class="figure-card-head">
+            <span class="title">Influential Loci Track</span>
+            <a class="open-link" id="open-loci" href="#" target="_blank">open &#8599;</a>
+          </div>
+          <iframe class="figure-frame" id="frame-loci"></iframe>
+        </div>
+        <div class="figure-card">
+          <div class="figure-card-head">
+            <span class="title">Structure by Confidence</span>
+            <a class="open-link" id="open-struct" href="#" target="_blank">open &#8599;</a>
+          </div>
+          <iframe class="figure-frame" id="frame-struct"></iframe>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+  <script src="{{ url_for('static', filename='js/results.js') }}"></script>
+</body>
+</html>

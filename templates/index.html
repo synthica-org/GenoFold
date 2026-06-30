@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>GenoFold — AI-Guided 3D Genome Reconstruction</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/tokens.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/upload.css') }}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+
+  <div class="bench">
+    <nav class="bench-nav">
+      <div class="wordmark">Geno<span>Fold</span></div>
+      <div class="nav-meta">Multi-Modal 3D Genome Reconstruction</div>
+    </nav>
+
+    <section class="hero">
+      <svg class="thread-rail" viewBox="0 0 230 230" aria-hidden="true">
+        <path id="thread-path" d="M30,40 C80,10 150,10 200,60 C230,90 190,140 140,130 C90,120 70,170 110,190 C140,205 190,180 200,150"
+          fill="none" stroke="#357f73" stroke-width="1" stroke-linecap="round" opacity="0.5"/>
+        <g id="thread-dots"></g>
+      </svg>
+
+      <div class="hero-eyebrow">Hi-C · NGS · metadata → structure</div>
+      <h1>Fold your genome <em>into shape.</em></h1>
+      <p class="hero-sub">
+        Upload contact, sequencing, and annotation data. GenoFold runs through a full six-stage pipeline and returns a reliable confidence-scored 3D reconstruction you can inspect and export.
+      </p>
+    </section>
+
+    <form id="upload-form" class="panel" autocomplete="off">
+      <div class="panel-inner">
+
+        <div class="path-notice">
+          <span class="path-notice-icon">&#9432;</span>
+          For large files already on disk, paste the file path below instead of uploading for greater efficency.
+        </div>
+
+        <div class="slot-grid">
+          <div class="slot is-required" data-slot="hic">
+            <div class="slot-head">
+              <span class="slot-label"><span class="slot-index">01</span> Hi-C contacts</span>
+              <span class="slot-tag required">required</span>
+            </div>
+            <p class="slot-hint">.hic (Juicer) or .cool / .mcool (cooler)</p>
+            <label class="slot-dropzone" for="hic_file">Drop file or click to browse</label>
+            <input type="file" id="hic_file" name="hic_file" accept=".hic,.cool,.mcool">
+            <input type="text" class="path-input" name="hic_path" placeholder="/Users/you/data/real/GM12878_insitu_hic.hic">
+          </div>
+
+          <div class="slot" data-slot="ngs">
+            <div class="slot-head">
+              <span class="slot-label"><span class="slot-index">02</span> NGS coverage</span>
+              <span class="slot-tag">optional</span>
+            </div>
+            <p class="slot-hint">.bigWig signal, .bam, or .npy coverage array</p>
+            <label class="slot-dropzone" for="ngs_file">Drop file or click to browse</label>
+            <input type="file" id="ngs_file" name="ngs_file" accept=".bigwig,.bw,.bam,.npy">
+            <input type="text" class="path-input" name="ngs_path" placeholder="/Users/you/data/reference/GM12878_DNase.bigWig">
+          </div>
+
+          <div class="slot" data-slot="fasta">
+            <div class="slot-head">
+              <span class="slot-label"><span class="slot-index">03</span> Reference genome</span>
+              <span class="slot-tag">optional</span>
+            </div>
+            <p class="slot-hint">.fa / .fasta &#8212; for real GC content and sequence features</p>
+            <label class="slot-dropzone" for="fasta_file">Drop file or click to browse</label>
+            <input type="file" id="fasta_file" name="fasta_file" accept=".fa,.fasta">
+            <input type="text" class="path-input" name="fasta_path" placeholder="/Users/you/data/reference/chr22.fa">
+          </div>
+
+          <div class="slot" data-slot="metadata">
+            <div class="slot-head">
+              <span class="slot-label"><span class="slot-index">04</span> Metadata table</span>
+              <span class="slot-tag">optional</span>
+            </div>
+            <p class="slot-hint">.csv / .tsv &#8212; species, GC, mappability, chromatin state</p>
+            <label class="slot-dropzone" for="metadata_file">Drop file or click to browse</label>
+            <input type="file" id="metadata_file" name="metadata_file" accept=".csv,.tsv">
+            <input type="text" class="path-input" name="metadata_path" placeholder="/Users/you/data/metadata.csv">
+          </div>
+        </div>
+
+        <div class="params-row">
+          <div class="field">
+            <label for="dataset_name">Dataset label</label>
+            <input type="text" id="dataset_name" name="dataset_name" placeholder="GM12878, sample 1" value="Upload">
+          </div>
+          <div class="field">
+            <label for="chrom">Chromosome</label>
+            <input type="text" id="chrom" name="chrom" placeholder="chr22" value="chr22">
+          </div>
+          <div class="field">
+            <label for="resolution">Resolution (bp)</label>
+            <select id="resolution" name="resolution">
+              <option value="1000000">1,000,000</option>
+              <option value="250000">250,000</option>
+              <option value="100000" selected>100,000</option>
+              <option value="50000">50,000</option>
+              <option value="25000">25,000</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="max_bins">Max bins</label>
+            <select id="max_bins" name="max_bins">
+              <option value="100">100 — fastest</option>
+              <option value="200" selected>200 — balanced</option>
+              <option value="400">400 — detailed</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="submit-row">
+          <p class="submit-note">Runs locally through all six GenoFold stages: Preprocess, Represent, Infer, Reconstruct, Score, and Explain.</p>
+          <button type="submit" class="btn-primary" id="submit-btn">
+            Run Pipeline <span aria-hidden="true">→</span>
+          </button>
+        </div>
+
+        <div class="errors-box" id="errors-box"></div>
+      </div>
+    </form>
+
+    <div class="foot-strip">
+      <div class="foot-item">
+        <span class="num">01 / 06 - Preprocess</span>
+        <p>Filter, correct, align, normalize, and denoise raw NGS and Hi-C data.</p>
+      </div>
+      <div class="foot-item">
+        <span class="num">02 / 06 - Represent</span>
+        <p>Convert genomic interactions into graphs and generate sequence embeddings.</p>
+      </div>
+      <div class="foot-item">
+        <span class="num">03 / 06 - Infer</span>
+        <p>Apply GNN encoders and transformer attention to capture relationships and predict early 3D representations.</p>
+      </div>
+      <div class="foot-item">
+        <span class="num">04 / 06 - Reconstruct</span>
+        <p>Decode learned features into 3D coordinates, spatial distances, and structural domains.</p>
+      </div>
+      <div class="foot-item">
+        <span class="num">05 / 06 - Score</span>
+        <p>Estimate prediction reliability and uncertainty on a per-region basis.</p>
+      </div>
+      <div class="foot-item">
+        <span class="num">06 / 06 - Explain</span>
+        <p>Generate heatmaps and other summaries highlighting influential loci and structural importance</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="loading-screen" id="loading-screen">
+    <div class="loading-inner">
+      <div class="loading-canvas-wrap">
+        <svg viewBox="0 0 420 220" width="100%" height="100%" id="loading-svg" aria-hidden="true"></svg>
+      </div>
+      <div class="loading-stage" id="loading-stage">Initializing</div>
+      <div class="loading-message" id="loading-message">Reading uploaded files…</div>
+      <div class="loading-bar-track"><div class="loading-bar-fill" id="loading-bar"></div></div>
+      <div class="loading-percent" id="loading-percent">0%</div>
+      <div class="loading-error" id="loading-error"></div>
+    </div>
+  </div>
+
+  <script src="{{ url_for('static', filename='js/upload.js') }}"></script>
+</body>
+</html>
