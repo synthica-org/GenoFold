@@ -28,3 +28,7 @@ checkpoints/
 data/real/
 data/reference/
 outputs/
+
+# Web app generated outputs
+genofold_web/results/
+genofold_web/uploads/
