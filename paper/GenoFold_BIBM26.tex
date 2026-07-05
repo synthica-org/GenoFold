@@ -84,13 +84,14 @@ evaluated on real Rao et al. in-situ Hi-C from three human cell lines. On GM1287
 chromosome~22 (\gfbins{} bins), across \gfnseeds{} seeds GenoFold reaches a distance
 Spearman correlation (dSCC) of $\gfdscc\pm\gfdsccstd$, statistically on par with the
 learned graph-network baseline HiC-GNN and within about a hundredth of the gradient
-distance optimizer 3DMax---the global-distance methods cluster within run-to-run
-noise. Single-molecule FISH distances from super-resolution chromatin tracing further
-confirm these reconstructions are physically accurate, not merely self-consistent with
-Hi-C: on the chromosome-21 tracing regions of two cell lines (IMR90, K562) GenoFold's
-distances match the imaging measurements at Spearman \fishgeno{} and \fishgenok{}, on par
-with the best distance optimizer and above the raw-Hi-C ceiling in both. Beyond this
-accuracy, GenoFold adds three capabilities none of them provides. First, it
+distance optimizer 3DMax; at full depth the global-distance methods cluster within
+run-to-run noise. To check that the reconstructions capture physical structure and not
+only the Hi-C signal they were fit to, we compare them against distances measured by
+super-resolution chromatin tracing. On the chromosome-21 tracing regions of two cell
+lines (IMR90, K562) GenoFold's distances match the imaging at Spearman \fishgeno{} and
+\fishgenok{}, on par with the best distance optimizer and above the raw-Hi-C ceiling in
+both. Beyond this competitive accuracy, GenoFold provides three capabilities the baselines
+lack. First, it
 generalizes: held-out contact pairs score within a few thousandths of training pairs
 (\gftrain{} vs \gfheldout{}), and the method retrains cleanly on the shallower IMR90
 and K562 data (dSCC \gfretrainmin{}--\gfretrainmax{}); a GM12878-trained model even
@@ -144,8 +145,8 @@ Preprocessing, inference, scoring, and visualization are handled by distinct
 programs with incompatible formats, which raises the cost of reproducing a result
 end-to-end.
 
-GenoFold answers all three gaps within one design, and---unlike a prior version of
-this system that was presented untrained---is trained and benchmarked here against
+GenoFold answers all three gaps within one design and, unlike a prior version of
+this system that was presented untrained, is trained and benchmarked here against
 established methods on real data. It builds a single contact graph whose nodes
 carry Hi-C contacts alongside per-bin sequencing coverage, reverse-complement
 $k$-mer composition, real GC content, and a real mappability track, so structure
@@ -158,8 +159,8 @@ that reconstructed 3D distances agree with Hi-C-derived target distances.
 Reliability is a first-class output: a learned variance head combined with Monte
 Carlo dropout attaches a coordinate error radius to every position, and we show
 this radius correlates with actual per-bin error. Explanations come from the
-model itself---Integrated Gradients attributions and attention weights---rather
-than a post-hoc surrogate. Everything runs in one invocation on commodity CPU.
+model itself, through Integrated Gradients attributions and attention weights, in
+place of a post-hoc surrogate. Everything runs in one invocation on commodity CPU.
 
 The contributions are: (i) a trained multi-modal GATv2--Transformer reconstructor
 with a self-supervised objective; (ii) a head-to-head quantitative benchmark
@@ -390,7 +391,7 @@ runtime and memory across whole chromosomes of increasing size.
 \section{Experimental Setup}
 \subsection{Data}
 We use the Rao et al. in-situ Hi-C datasets~\cite{rao2014} for three human cell
-lines---GM12878, IMR90, and K562---from GEO accession GSE63525, streamed
+lines (GM12878, IMR90, and K562) from GEO accession GSE63525, streamed
 per-chromosome at KR normalization. The coverage modality is the per-bin Hi-C 1D
 read depth. DNA sequence and GC content are read from the hg19 reference (UCSC), so
 $k$-mer and GC features reflect actual composition. Mappability is the ENCODE/CRG
@@ -400,7 +401,7 @@ or placeholder modalities.
 
 \subsection{Region, Resolution, and Scale}
 Unless stated otherwise, experiments use chromosome~22 at 50~kb, yielding \gfbins{}
-valid bins after filtering---roughly an order of magnitude more than the 39-bin
+valid bins after filtering, roughly an order of magnitude more than the 39-bin
 window of the earlier untrained demonstration. Scaling experiments run whole
 chromosomes of increasing size at 50~kb and repeat chromosome~22 at 25~kb.
 
@@ -425,7 +426,7 @@ R implementation (\texttt{FLAMINGOr}, Wang et al.) on the same contacts at 50~kb
 scored by the same dSCC on the shared valid bins; because it is a multi-scale method
 built for 1--5~kb, this is below its intended resolution, which we account for when
 reading its result (marked $\ddagger$ in Table~\ref{tab:benchmark}). Running the
-original tool---rather than a re-implementation---also surfaced, and we report, that a
+published tool rather than a re-implementation surfaced a further point we report: a
 simple low-rank-plus-continuity proxy does not capture FLAMINGO's behaviour at this
 scale.
 
@@ -449,22 +450,23 @@ ranking. Among the methods that optimise global pairwise-distance agreement, Gen
 attains a dSCC of $\gfdscc\pm\gfdsccstd$: statistically on par with the learned
 graph-network baseline HiC-GNN, within about a hundredth of the gradient distance
 optimiser 3DMax (the best mean), and ahead of ShRec3D. It is also competitive on
-TAD-boundary reproducibility. These four methods cluster within noise; the point is
-not a dSCC margin but that GenoFold reaches this cluster while being the only method
-that also supplies error-correlated uncertainty, modality attribution, and cross-cell
-transfer (Sections~\ref{sub:gen}--\ref{sub:calib}).
+TAD-boundary reproducibility. These four methods cluster within noise. GenoFold reaches
+that cluster while being the only one that also supplies error-correlated uncertainty,
+modality attribution, and cross-cell transfer (Sections~\ref{sub:gen}--\ref{sub:calib});
+that combination, more than any fractional dSCC margin, is what the benchmark is meant to
+show.
 
 FLAMINGO is a different kind of method and its low global dSCC in
 Table~\ref{tab:benchmark} should be read with that in mind. We ran the published
 FLAMINGO implementation (Wang et al.~\cite{flamingo2022}); it is a multi-scale method
 designed for 1--5~kb resolution, reconstructing per-domain structure at high resolution
 and stitching domains onto a coarse inter-domain backbone. Run here at 50~kb for
-comparability, it reconstructs local structure well---short-range ($\le$1~Mb, intra-domain)
-dSCC is $0.51$, competitive with the cluster---but its $1$~Mb backbone places distant
+comparability, it reconstructs local structure well (short-range, $\le$1~Mb intra-domain,
+dSCC is $0.51$, competitive with the cluster), but its $1$~Mb backbone places distant
 domains imprecisely, so global dSCC over all pairs, which are dominated by long-range
 contacts, falls to $0.27$. FLAMINGO optimises high-resolution local geometry, not
-global all-pair distance at coarse resolution; the two objectives simply differ, and we
-report both numbers rather than reduce FLAMINGO to the metric it is not built for. The
+global all-pair distance at coarse resolution; the two objectives simply differ, so we
+report both numbers instead of reducing FLAMINGO to the metric it is not built for. The
 reconstructed GenoFold structure and its agreement with the observed contact map are
 shown in Figs.~\ref{fig:structure} and~\ref{fig:contact}.
 
@@ -488,8 +490,8 @@ re-ran the head-to-head at FLAMINGO's native 5~kb on a 10~Mb window of chromosom
 Table~\ref{tab:5kb} shows the resolution effect is large: FLAMINGO's global dSCC rises
 from \flamfiftyglobal{} at 50~kb to \flamfiveglobal{} at 5~kb, so its low 50~kb score
 reflects the operating regime, not a defect. Even at 5~kb, though, the methods that
-directly optimise all-pair distances lead on dSCC---3DMax and GenoFold both near
-$0.82$---because dSCC is precisely their objective and not FLAMINGO's multi-scale one;
+directly optimise all-pair distances lead on dSCC (3DMax and GenoFold both near
+$0.82$), because dSCC is precisely their objective and not FLAMINGO's multi-scale one;
 the gap to FLAMINGO nonetheless narrows from $\sim$0.55 to $\sim$0.16. GenoFold itself
 reconstructs the 2{,}000-bin window at 5~kb (global dSCC $0.81$, on par with 3DMax),
 showing the architecture holds at fine resolution; its $O(M^2)$ global attention is
@@ -512,8 +514,8 @@ Table~\ref{tab:benchmark}) to \flamfiveglobal{}.}
 
 \subsection{Validation Against Single-Molecule FISH Distances}
 \label{sub:fish}
-Every score so far measures agreement with Hi-C-derived \emph{wish} distances---the
-signal the models train on---so it certifies self-consistency, not physical accuracy.
+Every score so far measures agreement with Hi-C-derived \emph{wish} distances, the
+signal the models train on, so it certifies self-consistency rather than physical accuracy.
 For a direct accuracy test we use \emph{measured} distances: the super-resolution
 chromatin tracing of Bintu et al.~\cite{bintu2018}, which images \fishnseg{} consecutive
 30~kb segments of chromosome~21 in thousands of single IMR90 and K562 chromosomes; the
@@ -528,12 +530,11 @@ GenoFold's distances match the FISH measurements at Spearman $\fishgeno$ (IMR90)
 $\fishgenok$ (K562), in both lines statistically level with the purpose-built optimizer
 3DMax ($\fishmax$, $\fishmaxk$) and \emph{above} the raw-Hi-C ceiling ($\fishanchor$,
 $\fishanchork$; the input contacts as distances, without reconstruction). The dSCC
-agreement reported throughout thus reflects genuine physical structure, not just a fit to
-the training signal, and the trained model equals a single-purpose optimizer on an
-orthogonal experimental benchmark in two cell lines while additionally being transferable
-(Section~\ref{sub:gen}) and confidence-aware. Validation is still confined to one 2~Mb
-chromosome-21 region---the deepest public tracing matched to Hi-C---so wider imaging
-validation remains future work.
+agreement reported throughout therefore tracks real physical structure, so the trained
+model matches a single-purpose optimizer on an orthogonal experimental benchmark in two
+cell lines while also being transferable (Section~\ref{sub:gen}) and confidence-aware.
+Validation is still confined to one 2~Mb chromosome-21 region, the deepest public tracing
+matched to Hi-C, so wider imaging validation remains future work.
 
 \begin{table}[t]
 \caption{Validation against \emph{measured} single-molecule distances: Spearman
@@ -541,7 +542,7 @@ correlation between reconstructed pairwise distances and the median FISH distanc
 of Bintu et al.~\cite{bintu2018} over all \fishnseg{}-segment pairs of chromosome~21
 (hg19 chr21:29.37--31.32~Mb) in two cell lines. GenoFold is mean\,$\pm$\,std over 3 seeds;
 best reconstruction per cell in bold. $^{\dagger}$Raw Hi-C = input contacts as distances,
-no reconstruction---the ceiling a faithful method inherits.}
+no reconstruction: the ceiling a faithful method inherits.}
 \label{tab:fish}
 \centering
 \input{tables/tab_fish.tex}
@@ -566,8 +567,8 @@ method is not tied to GM12878; the absolute values are lower than on GM12878 bec
 those in-situ Hi-C libraries are several fold more shallowly sequenced (roughly a
 fifth of the read depth at this locus), so their contact matrices are intrinsically
 noisier. Applied to a target cell line \emph{without any retraining}, a
-GM12878-trained model still recovers substantial structure---well above chance and a
-large fraction of the retrained score---though a clear gap to cell-line-specific
+GM12878-trained model still recovers substantial structure, well above chance and a
+large fraction of the retrained score, though a clear gap to cell-line-specific
 training remains. Transfer is thus a genuine bonus of the inductive design rather
 than a replacement for retraining: no distance-optimizing baseline can transfer at
 all, since each must re-solve the target matrix from scratch.
@@ -595,7 +596,7 @@ Fig.~\ref{fig:downsample} randomly retains only a fraction of observed contacts,
 simulating shallow Hi-C, and scores recovery of the full-depth structure. Sequence
 composition, GC content, and mappability do not degrade with sequencing depth, and
 the gap between the multi-modal model and the Hi-C-graph-only model grows
-monotonically as contacts are removed---from $+0.002$ at half depth to $+0.005$ at
+monotonically as contacts are removed, from $+0.002$ at half depth to $+0.005$ at
 $5\%$ of contacts. The effect is modest in magnitude but consistent and directional,
 and it is largest exactly where a contact-only method has least to lean on, the
 sparse regime the original review singled out. We report it as such rather than
@@ -667,8 +668,8 @@ reports bins, dSCC, CPU runtime, and peak resident memory; Fig.~\ref{fig:scaling
 plots runtime against problem size. dSCC remains high across chromosomes (a mild
 decline with size as more long-range structure enters), runtime grows super-linearly
 with bin count as the quadratic global-attention term predicts, and peak memory grows
-modestly, confirming the pipeline handles whole-chromosome problems---up to
-\gfmaxbins{} bins here---on commodity CPU, in contrast to the 39-bin window of the
+modestly, confirming the pipeline handles whole-chromosome problems (up to
+\gfmaxbins{} bins here) on commodity CPU, in contrast to the 39-bin window of the
 earlier demonstration. Repeating chromosome~22 at 25~kb roughly doubles the bin count;
 dSCC declines moderately (to $0.83$ from $0.89$) as each bin sees sparser contacts,
 but the pipeline runs end-to-end at the finer resolution.
@@ -714,12 +715,12 @@ and do so with accuracy on par with specialized reconstruction methods. Two desi
 choices carry most of the weight. Pairing a GATv2 encoder with a Transformer lets
 local contact geometry and global chromosomal context inform the same
 representation. Training that representation end-to-end against a distance-matching
-objective, rather than leaving weights random, is what makes every downstream
-output---coordinates, confidence, attribution---meaningful.
+objective, rather than leaving weights random, is what lets the downstream outputs
+(coordinates, confidence, and attribution) carry information.
 
-What distinguishes GenoFold from the baselines is not a margin on a single dSCC
-number, on which the field's methods cluster closely, but the set of capabilities
-that accompany a competitive score. Because it is inductive, GenoFold generalizes to
+What distinguishes GenoFold from the baselines is the set of capabilities that
+accompany a competitive score, given how closely the field's methods sit on any single
+dSCC number. Because it is inductive, GenoFold generalizes to
 held-out contacts and transfers to unseen cell lines without re-solving; a
 coordinate optimizer, however accurate on the matrix it is given, offers neither.
 Because reliability is part of the output and correlates with actual error, a
@@ -740,19 +741,19 @@ the 5~kb comparison of Table~\ref{tab:5kb} recovers most of that handicap but is
 to a 10~Mb window by memory, so a full-chromosome native-resolution run is future work.
 Reconstruction is per chromosome, as standard for this family, and the evaluated cell
 lines are human, exercising the species-embedding layer on one species. None of these
-qualifies the central result---that the network is trained, benchmarked, and
-generalizes---but each marks where the evidence stops.
+qualifies the central result (that the network is trained, benchmarked, and
+generalizes), but each marks where the evidence stops.
 
 \section{Conclusion}
 GenoFold couples a joint GATv2--Transformer encoder with a self-supervised
 distance-matching objective and an integrated confidence and explainability layer.
 On real Rao et al. in-situ Hi-C it reconstructs chromatin structure at accuracy
-competitive with the global-distance methods 3DMax, HiC-GNN, and ShRec3D---agreement
-that independent single-molecule FISH distances confirm is physically accurate (Spearman
-\fishgeno{} and \fishgenok{} in IMR90 and K562)---while uniquely adding per-bin
-uncertainty that correlates with error,
-multi-modal features that grow useful as Hi-C is sparsified, and cross-cell-line transfer
-without retraining, and scaling to whole chromosomes at 25--50~kb on commodity CPU.
+competitive with the global-distance methods 3DMax, HiC-GNN, and ShRec3D, an agreement
+that single-molecule FISH distances confirm is physically accurate (Spearman \fishgeno{}
+and \fishgenok{} in IMR90 and K562). Alongside that competitive score it uniquely adds
+per-bin uncertainty that correlates with error, multi-modal features that grow useful as
+Hi-C is sparsified, cross-cell-line transfer without retraining, and whole-chromosome
+scaling at 25--50~kb on commodity CPU.
 Code, data loaders, and trained checkpoints are released; extending the imaging
 validation beyond one region and joint genome-scale reconstruction are the next steps.
 
