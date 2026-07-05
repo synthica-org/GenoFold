@@ -13,6 +13,7 @@
 \citation{gal2016}
 \citation{sundararajan2017}
 \citation{imakaev2012}
+\citation{pyg2019}
 \@writefile{toc}{\contentsline {section}{\numberline {II}Related Work}{2}{}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {II-A}}Distance-Based Reconstruction}{2}{}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {II-B}}Graph and Deep-Learning Reconstruction}{2}{}\protected@file@percent }
@@ -21,7 +22,6 @@
 \@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {II-E}}Positioning}{2}{}\protected@file@percent }
 \@writefile{toc}{\contentsline {section}{\numberline {III}The GenoFold Framework}{2}{}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {III-A}}Stage 1: Data Preprocessing}{2}{}\protected@file@percent }
-\citation{pyg2019}
 \citation{gatv2}
 \citation{gat2018}
 \citation{vaswani2017}
@@ -40,13 +40,13 @@
 \@writefile{toc}{\contentsline {paragraph}{\numberline {\mbox  {III-C}0b}Transformer encoder}{3}{}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {III-D}}Stage 4: 3D Reconstruction}{3}{}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {III-E}}Stage 5: Confidence and Uncertainty Scoring}{3}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {III-F}}Stage 6: Explainability}{3}{}\protected@file@percent }
+\newlabel{sec:explain}{{\mbox  {III-F}}{3}{}{subsection.3.6}{}}
 \citation{rao2014}
 \citation{oluwadare2018}
 \citation{hicgnn2022}
 \citation{lesne2014}
 \citation{flamingo2022}
-\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {III-F}}Stage 6: Explainability}{4}{}\protected@file@percent }
-\newlabel{sec:explain}{{\mbox  {III-F}}{4}{}{subsection.3.6}{}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {III-G}}Training Objective}{4}{}\protected@file@percent }
 \newlabel{sec:objective}{{\mbox  {III-G}}{4}{}{subsection.3.7}{}}
 \newlabel{eq:loss}{{3}{4}{}{equation.3}{}}
@@ -59,6 +59,8 @@
 \@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {IV-E}}Implementation and Reproducibility}{4}{}\protected@file@percent }
 \citation{flamingo2022}
 \citation{flamingo2022}
+\citation{bintu2018}
+\citation{rao2014}
 \@writefile{lot}{\contentsline {table}{\numberline {II}{\ignorespaces Reconstruction accuracy on GM12878 chromosome~22 (701{} bins, 50~kb), all methods scored by dSCC over the same observed pairs, mean\,$\pm $\,std over 3{} seeds (ShRec3D deterministic). TAD $F_1$ is boundary reproducibility; time is per-run wall-clock on CPU. Best mean in bold. $\ddagger $: the published FLAMINGO~\cite  {flamingo2022} run at 50~kb, below its native 1--5~kb resolution; its short-range ($\le $1~Mb) dSCC is $0.51$ and global dSCC is dominated by the long-range pairs its coarse backbone handles least well (see text).}}{5}{}\protected@file@percent }
 \newlabel{tab:benchmark}{{II}{5}{}{table.2}{}}
 \@writefile{toc}{\contentsline {section}{\numberline {V}Results}{5}{}\protected@file@percent }
@@ -69,30 +71,40 @@
 \newlabel{fig:benchmark}{{2}{5}{}{figure.2}{}}
 \@writefile{lot}{\contentsline {table}{\numberline {III}{\ignorespaces Native-resolution comparison at 5~kb on a 10~Mb window of GM12878 chromosome~22 (chr22:20--30~Mb, 1{,}964 bins), scored by dSCC over the same bins. Best global mean in bold. $^{\ast }$: FLAMINGO from its published R package (mean\,$\pm $\,std over 3 seeds); other methods are single representative runs. At native resolution FLAMINGO's global dSCC rises from 0.27{} (50~kb, Table~\ref {tab:benchmark}) to 0.65{}.}}{5}{}\protected@file@percent }
 \newlabel{tab:5kb}{{III}{5}{}{table.3}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {V-C}}Generalization}{5}{}\protected@file@percent }
-\newlabel{sub:gen}{{\mbox  {V-C}}{5}{}{subsection.5.3}{}}
-\@writefile{lot}{\contentsline {table}{\numberline {IV}{\ignorespaces Cross-cell-line generalization on chromosome~22. A GM12878-trained GenoFold is transferred without retraining; ``retrained'' re-fits the target cell line from scratch as an upper bound.}}{6}{}\protected@file@percent }
-\newlabel{tab:crosscell}{{IV}{6}{}{table.4}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {V-D}}Cross-Cell-Line Generalization}{6}{}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {V-E}}Multi-Modality: Redundant at Depth, Useful under Sparsity}{6}{}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {V}{\ignorespaces Modality ablation on GM12878 chromosome~22 at full depth (held-out dSCC). All configurations, including Hi-C-graph-only, lie within $\sim $0.01 dSCC: the dense contact graph dominates and the node modalities are near-redundant here. ``sparse'' restricts to pairs touching the low-coverage tercile of bins.}}{6}{}\protected@file@percent }
-\newlabel{tab:ablation}{{V}{6}{}{table.5}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {3}{\ignorespaces Multi-modality under Hi-C sparsity. As observed contacts are downsampled (right to left), the multi-modal model's advantage over a Hi-C-graph-only model grows monotonically, reaching $+0.005$ dSCC at $5\%$ of contacts. Both are scored against the full-depth structure.}}{6}{}\protected@file@percent }
-\newlabel{fig:downsample}{{3}{6}{}{figure.3}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {V-F}}Uncertainty Calibration}{6}{}\protected@file@percent }
-\newlabel{sub:calib}{{\mbox  {V-F}}{6}{}{subsection.5.6}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {V-G}}Explainability on a Trained Model}{6}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {V-C}}Validation Against Single-Molecule FISH Distances}{5}{}\protected@file@percent }
+\newlabel{sub:fish}{{\mbox  {V-C}}{5}{}{subsection.5.3}{}}
+\citation{bintu2018}
+\@writefile{lot}{\contentsline {table}{\numberline {IV}{\ignorespaces Validation against \emph  {measured} single-molecule distances: Spearman and Pearson (log) correlation between each method's reconstructed pairwise distances and the median FISH distance matrix of Bintu et al.~\cite  {bintu2018}, over all pairs of the 65{} imaged segments of IMR90 chromosome~21 (hg19 chr21:29.37--31.32~Mb; 10~kb Hi-C coarse-grained to the 30~kb imaging grid). GenoFold is mean\,$\pm $\,std over 3 seeds; best reconstruction in bold. $^{\dagger }$Raw Hi-C is the input contact matrix converted to distances without reconstruction---the accuracy ceiling a faithful method inherits from its input.}}{6}{}\protected@file@percent }
+\newlabel{tab:fish}{{IV}{6}{}{table.4}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {V-D}}Generalization}{6}{}\protected@file@percent }
+\newlabel{sub:gen}{{\mbox  {V-D}}{6}{}{subsection.5.4}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {V-E}}Cross-Cell-Line Generalization}{6}{}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {V}{\ignorespaces Cross-cell-line generalization on chromosome~22. A GM12878-trained GenoFold is transferred without retraining; ``retrained'' re-fits the target cell line from scratch as an upper bound.}}{6}{}\protected@file@percent }
+\newlabel{tab:crosscell}{{V}{6}{}{table.5}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {V-F}}Multi-Modality: Redundant at Depth, Useful under Sparsity}{6}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {V-G}}Uncertainty Calibration}{6}{}\protected@file@percent }
+\newlabel{sub:calib}{{\mbox  {V-G}}{6}{}{subsection.5.7}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {VI}{\ignorespaces Modality ablation on GM12878 chromosome~22 at full depth (held-out dSCC). All configurations, including Hi-C-graph-only, lie within $\sim $0.01 dSCC: the dense contact graph dominates and the node modalities are near-redundant here. ``sparse'' restricts to pairs touching the low-coverage tercile of bins.}}{7}{}\protected@file@percent }
+\newlabel{tab:ablation}{{VI}{7}{}{table.6}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {3}{\ignorespaces Multi-modality under Hi-C sparsity. As observed contacts are downsampled (right to left), the multi-modal model's advantage over a Hi-C-graph-only model grows monotonically, reaching $+0.005$ dSCC at $5\%$ of contacts. Both are scored against the full-depth structure.}}{7}{}\protected@file@percent }
+\newlabel{fig:downsample}{{3}{7}{}{figure.3}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {V-H}}Explainability on a Trained Model}{7}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {V-I}}Scaling}{7}{}\protected@file@percent }
 \@writefile{lof}{\contentsline {figure}{\numberline {4}{\ignorespaces Uncertainty calibration on GM12878 chromosome~22. Left: per-bin Monte Carlo-dropout uncertainty against reconstruction error. Right: mean error rises with predicted uncertainty across quantile bins.}}{7}{}\protected@file@percent }
 \newlabel{fig:calibration}{{4}{7}{}{figure.4}{}}
 \@writefile{lof}{\contentsline {figure}{\numberline {5}{\ignorespaces Integrated-Gradients feature-group importance on the trained model.}}{7}{}\protected@file@percent }
 \newlabel{fig:importance}{{5}{7}{}{figure.5}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {V-H}}Scaling}{7}{}\protected@file@percent }
 \@writefile{toc}{\contentsline {section}{\numberline {VI}Discussion}{7}{}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {VI}{\ignorespaces Whole-chromosome scaling for GenoFold at 50~kb. Peak RSS is the process high-water mark.}}{7}{}\protected@file@percent }
-\newlabel{tab:scaling}{{VI}{7}{}{table.6}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {6}{\ignorespaces Training runtime against problem size across whole chromosomes at 50~kb; each point is annotated with its dSCC.}}{7}{}\protected@file@percent }
-\newlabel{fig:scaling}{{6}{7}{}{figure.6}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {VI-A}}Threats to Validity}{7}{}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {VII}{\ignorespaces Whole-chromosome scaling for GenoFold at 50~kb. Peak RSS is the process high-water mark.}}{8}{}\protected@file@percent }
+\newlabel{tab:scaling}{{VII}{8}{}{table.7}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {6}{\ignorespaces Training runtime against problem size across whole chromosomes at 50~kb; each point is annotated with its dSCC.}}{8}{}\protected@file@percent }
+\newlabel{fig:scaling}{{6}{8}{}{figure.6}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {VI-A}}Threats to Validity}{8}{}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {7}{\ignorespaces GenoFold 3D reconstruction of GM12878 chromosome~22, colored by per-bin Monte Carlo-dropout uncertainty. The backbone traces consecutive bins.}}{8}{}\protected@file@percent }
+\newlabel{fig:structure}{{7}{8}{}{figure.7}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {8}{\ignorespaces Observed KR-normalized Hi-C contact map (left) and the pseudo-contact map implied by the GenoFold reconstruction (right) for GM12878 chromosome~22, on a $\log (1+x)$ scale. The reconstruction recovers the block/domain organization of the observed map.}}{8}{}\protected@file@percent }
+\newlabel{fig:contact}{{8}{8}{}{figure.8}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {VII}Conclusion}{8}{}\protected@file@percent }
 \bibcite{lieberman2009}{1}
 \bibcite{dixon2012}{2}
 \bibcite{rao2014}{3}
@@ -110,10 +122,6 @@
 \bibcite{crane2015}{15}
 \bibcite{gal2016}{16}
 \bibcite{sundararajan2017}{17}
-\@writefile{lof}{\contentsline {figure}{\numberline {7}{\ignorespaces GenoFold 3D reconstruction of GM12878 chromosome~22, colored by per-bin Monte Carlo-dropout uncertainty. The backbone traces consecutive bins.}}{8}{}\protected@file@percent }
-\newlabel{fig:structure}{{7}{8}{}{figure.7}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {8}{\ignorespaces Observed KR-normalized Hi-C contact map (left) and the pseudo-contact map implied by the GenoFold reconstruction (right) for GM12878 chromosome~22, on a $\log (1+x)$ scale. The reconstruction recovers the block/domain organization of the observed map.}}{8}{}\protected@file@percent }
-\newlabel{fig:contact}{{8}{8}{}{figure.8}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {VII}Conclusion}{8}{}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{References}{8}{}\protected@file@percent }
-\gdef \@abspage@last{8}
+\bibcite{bintu2018}{18}
+\@writefile{toc}{\contentsline {section}{References}{9}{}\protected@file@percent }
+\gdef \@abspage@last{9}

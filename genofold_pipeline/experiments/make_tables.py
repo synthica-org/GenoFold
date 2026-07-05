@@ -158,6 +158,29 @@ def table_5kb():
     print(f"  (5kb comparison: {m.get('window','?')}, {m.get('n_bins','?')} bins)")
 
 
+def table_fish():
+    d = _load("fish_validation.json")
+    if not d:
+        return
+    recon = sorted([m for m in ["GenoFold", "3DMax", "ShRec3D"] if m in d],
+                   key=lambda m: -d[m]["fish_spearman"])
+    order = recon + (["HiC_wish"] if "HiC_wish" in d else [])
+    best = max(d[m]["fish_spearman"] for m in recon)
+    label = {"HiC_wish": "Raw Hi-C$^{\\dagger}$"}
+    lines = []
+    for m in order:
+        v = d[m]
+        sp = (f"\\textbf{{{v['fish_spearman']:.3f}}}"
+              if v["fish_spearman"] == best else f"{v['fish_spearman']:.3f}")
+        if v.get("fish_spearman_std"):
+            sp += f" $\\pm$ {v['fish_spearman_std']:.3f}"
+        lines.append(f"{label.get(m, m)} & {sp} & {v['fish_pearson_log']:.3f} \\\\")
+    header = "\\textbf{Method} & \\textbf{FISH Spearman} & \\textbf{FISH Pearson}"
+    _write("tab_fish.tex", _tabular("@{}lcc@{}", header, lines))
+    mm = d.get("_meta", {})
+    print(f"  (FISH: {mm.get('n_segments','?')} segments, {mm.get('region_hic_hg19','?')})")
+
+
 def macros():
     """Single-number \\newcommand macros for inline use in prose."""
     m = []
@@ -195,6 +218,15 @@ def macros():
     c5 = _load("cmp5kb.json")
     if c5 and "FLAMINGO" in c5:
         m.append(f"\\renewcommand{{\\flamfiveglobal}}{{{c5['FLAMINGO']['dscc']:.2f}}}")
+    fv = _load("fish_validation.json")
+    if fv and "GenoFold" in fv:
+        m.append(f"\\renewcommand{{\\fishgeno}}{{{fv['GenoFold']['fish_spearman']:.3f}}}")
+        m.append(f"\\renewcommand{{\\fishgenostd}}{{{fv['GenoFold']['fish_spearman_std']:.3f}}}")
+        if "3DMax" in fv:
+            m.append(f"\\renewcommand{{\\fishmax}}{{{fv['3DMax']['fish_spearman']:.3f}}}")
+        if "HiC_wish" in fv:
+            m.append(f"\\renewcommand{{\\fishanchor}}{{{fv['HiC_wish']['fish_spearman']:.3f}}}")
+        m.append(f"\\renewcommand{{\\fishnseg}}{{{fv['_meta']['n_segments']}}}")
     sc = _load("scaling_50000.json")
     if sc:
         nb = max(v["n_bins"] for v in sc.values())
@@ -204,7 +236,7 @@ def macros():
 
 
 def main():
-    for fn in [table_benchmark, table_ablation, table_scaling, table_cross_cell, table_5kb, macros]:
+    for fn in [table_benchmark, table_ablation, table_scaling, table_cross_cell, table_5kb, table_fish, macros]:
         try:
             fn()
         except Exception as e:  # noqa: BLE001

@@ -1,0 +1,35 @@
+{
+  "_meta": {
+    "region_hg38": "chr21:28.00-29.95Mb",
+    "region_hic_hg19": "chr21:29.37-31.32Mb",
+    "cell": "IMR90",
+    "n_segments": 65,
+    "n_segments_scored": 65,
+    "hic_res": 10000,
+    "min_detections": 100,
+    "metric": "Spearman(model_dist, FISH_median_dist)",
+    "source": "Bintu 2018 Science; Rao 2014 GSE63525 IMR90"
+  },
+  "GenoFold": {
+    "fish_spearman": 0.9859169094736032,
+    "fish_spearman_std": 0.0009562987742642076,
+    "fish_pearson_log": 0.9799826895321582,
+    "n_pairs": 2080,
+    "n_seeds": 3
+  },
+  "3DMax": {
+    "fish_spearman": 0.9868767555082527,
+    "fish_pearson_log": 0.9833418524057453,
+    "n_pairs": 2080
+  },
+  "ShRec3D": {
+    "fish_spearman": 0.9698001518509922,
+    "fish_pearson_log": 0.908309912719099,
+    "n_pairs": 2080
+  },
+  "HiC_wish": {
+    "fish_spearman": 0.9730457674044201,
+    "fish_pearson_log": 0.9740595938076804,
+    "n_pairs": 2076
+  }
+}

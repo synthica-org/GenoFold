@@ -37,6 +37,11 @@
 \providecommand{\flamfiftyglobal}{0.27}
 \providecommand{\flamfiftyshort}{0.51}
 \providecommand{\flamfiveglobal}{0.66}
+\providecommand{\fishgeno}{0.00}
+\providecommand{\fishgenostd}{0.00}
+\providecommand{\fishmax}{0.00}
+\providecommand{\fishanchor}{0.00}
+\providecommand{\fishnseg}{0}
 \IfFileExists{tables/macros.tex}{\input{tables/macros.tex}}{}
 
 \def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
@@ -44,8 +49,8 @@
 
 \begin{document}
 
-\title{GenoFold: A Trained, Confidence-Aware, Explainable,\\
-Multi-Modal Framework for 3D Genome\\
+\title{GenoFold: A Trained, Confidence-Aware, and\\
+Transferable Framework for 3D Genome\\
 Architecture Reconstruction}
 
 \author{
@@ -77,7 +82,12 @@ chromosome~22 (\gfbins{} bins), across \gfnseeds{} seeds GenoFold reaches a dist
 Spearman correlation (dSCC) of $\gfdscc\pm\gfdsccstd$, statistically on par with the
 learned graph-network baseline HiC-GNN and within about a hundredth of the gradient
 distance optimizer 3DMax---the global-distance methods cluster within run-to-run
-noise---while adding three capabilities none of them provides. First, it
+noise. Crucially, single-molecule FISH distances from super-resolution chromatin
+tracing confirm these reconstructions are physically accurate rather than merely
+self-consistent with Hi-C: on the IMR90 chromosome-21 tracing region of Bintu et al.,
+GenoFold's distances agree with the imaging measurements at Spearman \fishgeno{}, on
+par with the best distance optimizer and above the raw-Hi-C ceiling. Beyond this
+accuracy, GenoFold adds three capabilities none of them provides. First, it
 generalizes: held-out contact pairs score within a few thousandths of training pairs
 (\gftrain{} vs \gfheldout{}), and the method retrains cleanly on the shallower IMR90
 and K562 data (dSCC \gfretrainmin{}--\gfretrainmax{}); a GM12878-trained model even
@@ -506,6 +516,48 @@ Table~\ref{tab:benchmark}) to \flamfiveglobal{}.}
 \input{tables/tab_5kb.tex}
 \end{table}
 
+\subsection{Validation Against Single-Molecule FISH Distances}
+\label{sub:fish}
+Every score reported so far measures agreement with Hi-C-derived \emph{wish}
+distances---the same signal the models train on---so it certifies self-consistency,
+not physical accuracy. To test accuracy directly we compare against distances that
+were \emph{measured} rather than inferred from Hi-C: the super-resolution chromatin
+tracing of Bintu et al.~\cite{bintu2018}, which images \fishnseg{} consecutive 30~kb
+segments of human chromosome~21 in roughly 4{,}900 single IMR90 chromosomes and
+records each segment's 3D centroid. Collapsing the single-cell traces to a median
+pairwise-distance matrix yields an experimental ground truth for the region. We
+reconstruct the same region from IMR90 Hi-C~\cite{rao2014} at 10~kb, coarse-grain the
+predicted coordinates onto the 30~kb imaging grid, and correlate model pairwise
+distances against the imaging medians (Table~\ref{tab:fish}). The imaged region is
+annotated in hg38; we register it to the hg19 Hi-C by the standard liftOver offset
+($+1.37$~Mb), the value that independently maximises raw Hi-C/imaging concordance.
+
+GenoFold's reconstructed distances agree with the FISH measurements at Spearman
+$\fishgeno\pm\fishgenostd$ over three seeds---statistically indistinguishable from the
+purpose-built distance optimizer 3DMax ($\fishmax$) and, like it, \emph{above} the
+raw-Hi-C ceiling of $\fishanchor$, the concordance of the input contact matrix itself
+converted to distances with no reconstruction (Table~\ref{tab:fish}, dagger row).
+Two things follow. The dSCC agreement reported throughout this paper reflects genuine
+physical structure, not merely a fit to the training signal; and a trained, inductive
+model that also transfers across cell lines (Section~\ref{sub:gen}) matches a
+single-purpose optimizer on an orthogonal experimental benchmark at no accuracy cost.
+This is one region in one cell line---the deepest currently-public tracing we could
+align to matched Hi-C---so broader imaging validation remains future work.
+
+\begin{table}[t]
+\caption{Validation against \emph{measured} single-molecule distances: Spearman and
+Pearson (log) correlation between each method's reconstructed pairwise distances and
+the median FISH distance matrix of Bintu et al.~\cite{bintu2018}, over all pairs of the
+\fishnseg{} imaged segments of IMR90 chromosome~21 (hg19 chr21:29.37--31.32~Mb; 10~kb
+Hi-C coarse-grained to the 30~kb imaging grid). GenoFold is mean\,$\pm$\,std over 3
+seeds; best reconstruction in bold. $^{\dagger}$Raw Hi-C is the input contact matrix
+converted to distances without reconstruction---the accuracy ceiling a faithful method
+inherits from its input.}
+\label{tab:fish}
+\centering
+\input{tables/tab_fish.tex}
+\end{table}
+
 \subsection{Generalization}
 \label{sub:gen}
 Because GenoFold learns an inductive mapping rather than fitting free coordinates
@@ -690,10 +742,12 @@ decoder turns into coordinates, and the modality attribution is meaningful only
 because the node features were not flattened.
 
 \subsection{Threats to Validity}
-The objective is self-supervised against Hi-C-derived distances, the field-standard
-target for these methods, but not against experimentally resolved structures;
-orthogonal validation with FISH distances is the natural next step and would
-convert dSCC agreement into an absolute accuracy claim. The main table runs
+The objective is self-supervised against Hi-C-derived distances rather than
+experimentally resolved structures. Section~\ref{sub:fish} confronts this directly,
+validating the reconstructions against \emph{measured} single-molecule FISH distances
+and finding close agreement (Spearman \fishgeno{}); but that check covers a single
+chromosome-21 region in one cell line, so validation across more regions and cell
+types remains future work. The main table runs
 FLAMINGO from its published implementation at 50~kb, below its native 1--5~kb
 resolution; the 5~kb comparison of Table~\ref{tab:5kb} recovers most of that handicap
 but is confined to a 10~Mb window by this machine's memory, so a full-chromosome
@@ -709,14 +763,15 @@ GenoFold contributes a trained multi-modal graph representation, a joint
 GATv2--Transformer encoder with a self-supervised distance-matching objective, and
 an integrated confidence and explainability layer. On real Rao et al. in-situ Hi-C
 it reconstructs chromatin structure at accuracy competitive with the global-distance
-methods 3DMax, HiC-GNN, and ShRec3D, while uniquely adding per-bin uncertainty that
-correlates with error, multi-modal features that grow useful as Hi-C is sparsified, and
-cross-cell-line transfer without retraining, and while scaling to whole chromosomes at
-25--50~kb on commodity CPU.
+methods 3DMax, HiC-GNN, and ShRec3D---agreement that independent single-molecule FISH
+distances confirm is physically accurate (Spearman \fishgeno{})---while uniquely adding
+per-bin uncertainty that correlates with error, multi-modal features that grow useful as
+Hi-C is sparsified, and cross-cell-line transfer without retraining, and while scaling to
+whole chromosomes at 25--50~kb on commodity CPU.
 The system moves from the architecture-only demonstration it began as to a trained,
 benchmarked, and generalizing method. Code, data loaders, and trained checkpoints
-are released; orthogonal validation against FISH distances and joint genome-scale
-reconstruction are the next steps.
+are released; extending the single-molecule imaging validation beyond one region and
+joint genome-scale reconstruction are the next steps.
 
 \section*{Acknowledgment}
 The authors thank the NCBI Gene Expression Omnibus and the Aiden Lab for open
@@ -741,6 +796,7 @@ Browser for the mappability track and hg19 reference.
 \bibitem{crane2015} E. Crane et al., ``Condensin-driven remodelling of X chromosome topology during dosage compensation,'' \textit{Nature}, vol. 523, no. 7559, pp. 240--244, 2015.
 \bibitem{gal2016} Y. Gal and Z. Ghahramani, ``Dropout as a Bayesian approximation: Representing model uncertainty in deep learning,'' in \textit{Proc. Int. Conf. Machine Learning (ICML)}, pp. 1050--1059, 2016.
 \bibitem{sundararajan2017} M. Sundararajan, A. Taly, and Q. Yan, ``Axiomatic attribution for deep networks,'' in \textit{Proc. Int. Conf. Machine Learning (ICML)}, pp. 3319--3328, 2017.
+\bibitem{bintu2018} B. Bintu, L. J. Mateo, J.-H. Su, N. A. Sinnott-Armstrong, M. Parker, S. Kinrot, K. Yamaya, A. N. Boettiger, and X. Zhuang, ``Super-resolution chromatin tracing reveals domains and cooperative interactions in single cells,'' \textit{Science}, vol. 362, no. 6413, eaau1783, 2018.
 \end{thebibliography}
 
 \end{document}

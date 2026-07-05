@@ -17,6 +17,10 @@ venv/
 *.bai
 *.npy
 
+# LaTeX build caches (latexmk)
+*.fls
+*.fdb_latexmk
+
 # Model checkpoints
 checkpoints/
 *.pt

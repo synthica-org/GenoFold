@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.27 (TeX Live 2025) (preloaded format=pdflatex 2025.3.24)  6 JUL 2026 04:51
+This is pdfTeX, Version 3.141592653-2.6-1.40.27 (TeX Live 2025) (preloaded format=pdflatex 2025.3.24)  6 JUL 2026 05:37
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -324,20 +324,20 @@ File: l3backend-pdftex.def 2024-05-08 L3 backend support: PDF output (pdfTeX)
 ) (./GenoFold_BIBM26.aux)
 \openout1 = `GenoFold_BIBM26.aux'.
 
-LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 45.
-LaTeX Font Info:    ... okay on input line 45.
-LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 45.
-LaTeX Font Info:    ... okay on input line 45.
-LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 45.
-LaTeX Font Info:    ... okay on input line 45.
-LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 45.
-LaTeX Font Info:    ... okay on input line 45.
-LaTeX Font Info:    Checking defaults for TS1/cmr/m/n on input line 45.
-LaTeX Font Info:    ... okay on input line 45.
-LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 45.
-LaTeX Font Info:    ... okay on input line 45.
-LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 45.
-LaTeX Font Info:    ... okay on input line 45.
+LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 50.
+LaTeX Font Info:    ... okay on input line 50.
+LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 50.
+LaTeX Font Info:    ... okay on input line 50.
+LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 50.
+LaTeX Font Info:    ... okay on input line 50.
+LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 50.
+LaTeX Font Info:    ... okay on input line 50.
+LaTeX Font Info:    Checking defaults for TS1/cmr/m/n on input line 50.
+LaTeX Font Info:    ... okay on input line 50.
+LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 50.
+LaTeX Font Info:    ... okay on input line 50.
+LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 50.
+LaTeX Font Info:    ... okay on input line 50.
 
 -- Lines per column: 56 (exact).
 (/usr/local/texlive/2025/texmf-dist/tex/context/base/mkii/supp-pdf.mkii
@@ -362,13 +362,13 @@ Package epstopdf-base Info: Redefining graphics rule for `.eps' on input line 4
 File: epstopdf-sys.cfg 2010/07/13 v1.3 Configuration of (r)epstopdf for TeX Liv
 e
 ))
-LaTeX Font Info:    Trying to load font information for U+msa on input line 77.
+LaTeX Font Info:    Trying to load font information for U+msa on input line 82.
 
 
 (/usr/local/texlive/2025/texmf-dist/tex/latex/amsfonts/umsa.fd
 File: umsa.fd 2013/01/14 v3.01 AMS symbols A
 )
-LaTeX Font Info:    Trying to load font information for U+msb on input line 77.
+LaTeX Font Info:    Trying to load font information for U+msb on input line 82.
 
 
 (/usr/local/texlive/2025/texmf-dist/tex/latex/amsfonts/umsb.fd
@@ -389,84 +389,92 @@ ocal/texlive/2025/texmf-dist/fonts/enc/dvips/base/8r.enc}
 <images/image1.png, id=12, 990.70125pt x 198.7425pt>
 File: images/image1.png Graphic file (type png)
 <use images/image1.png>
-Package pdftex.def Info: images/image1.png  used on input line 215.
+Package pdftex.def Info: images/image1.png  used on input line 225.
 (pdftex.def)             Requested size: 505.6778pt x 101.44223pt.
-
-
-[2]
 LaTeX Font Info:    Trying to load font information for OT1+pcr on input line 2
-51.
- (/usr/local/texlive/2025/texmf-dist/tex/latex/psnfss/ot1pcr.fd
+61.
+(/usr/local/texlive/2025/texmf-dist/tex/latex/psnfss/ot1pcr.fd
 File: ot1pcr.fd 2001/06/04 font definitions for OT1/pcr.
 )
+
+[2]
 
 
 
 [3 <./images/image1.png>]
 
 LaTeX Font Info:    Trying to load font information for OMS+pcr on input line 4
-23.
+33.
 (/usr/local/texlive/2025/texmf-dist/tex/latex/psnfss/omspcr.fd
 File: omspcr.fd 
 )
 LaTeX Font Info:    Font shape `OMS/pcr/m/n' in size <10> not available
-(Font)              Font shape `OMS/cmsy/m/n' tried instead on input line 423.
+(Font)              Font shape `OMS/cmsy/m/n' tried instead on input line 433.
 
 
 [4] (./tables/tab_benchmark.tex)
 <figures/fig_benchmark.png, id=36, 570.4512pt x 224.037pt>
 File: figures/fig_benchmark.png Graphic file (type png)
 <use figures/fig_benchmark.png>
-Package pdftex.def Info: figures/fig_benchmark.png  used on input line 473.
+Package pdftex.def Info: figures/fig_benchmark.png  used on input line 483.
 (pdftex.def)             Requested size: 252.0pt x 98.9697pt.
 
 
 (./tables/tab_5kb.tex)
 
-[5 <./figures/fig_benchmark.png>] (./tables/tab_cross_cell.tex)
-(./tables/tab_ablation.tex)
+[5 <./figures/fig_benchmark.png>]
+
+LaTeX Font Warning: Font shape `OT1/ptm/m/scit' undefined
+(Font)              using `OT1/ptm/m/it' instead on input line 555.
+
+(./tables/tab_fish.tex)
+
+(./tables/tab_cross_cell.tex) (./tables/tab_ablation.tex)
 <figures/fig_downsample.png, id=45, 390.258pt x 231.264pt>
 File: figures/fig_downsample.png Graphic file (type png)
 <use figures/fig_downsample.png>
-Package pdftex.def Info: figures/fig_downsample.png  used on input line 575.
+Package pdftex.def Info: figures/fig_downsample.png  used on input line 627.
 (pdftex.def)             Requested size: 252.0pt x 149.33527pt.
 
 
-<figures/fig_calibration.png, id=46, 570.933pt x 224.037pt>
+[6]
+<figures/fig_calibration.png, id=49, 570.933pt x 224.037pt>
 File: figures/fig_calibration.png Graphic file (type png)
 <use figures/fig_calibration.png>
-Package pdftex.def Info: figures/fig_calibration.png  used on input line 597.
+Package pdftex.def Info: figures/fig_calibration.png  used on input line 649.
 (pdftex.def)             Requested size: 252.0pt x 98.88766pt.
-<figures/fig_importance.png, id=47, 361.35pt x 194.6472pt>
+<figures/fig_importance.png, id=50, 361.35pt x 194.6472pt>
 File: figures/fig_importance.png Graphic file (type png)
 <use figures/fig_importance.png>
-Package pdftex.def Info: figures/fig_importance.png  used on input line 618.
+Package pdftex.def Info: figures/fig_importance.png  used on input line 670.
 (pdftex.def)             Requested size: 252.0pt x 135.74422pt.
 
 
-[6 <./figures/fig_downsample.png>] (./tables/tab_scaling.tex)
-<figures/fig_scaling.png, id=52, 426.393pt x 231.264pt>
+(./tables/tab_scaling.tex)
+<figures/fig_scaling.png, id=51, 426.393pt x 231.264pt>
 File: figures/fig_scaling.png Graphic file (type png)
 <use figures/fig_scaling.png>
-Package pdftex.def Info: figures/fig_scaling.png  used on input line 645.
+Package pdftex.def Info: figures/fig_scaling.png  used on input line 697.
 (pdftex.def)             Requested size: 252.0pt x 136.67747pt.
-<figures/fig_structure.png, id=53, 349.7868pt x 281.3712pt>
+<figures/fig_structure.png, id=52, 349.7868pt x 281.3712pt>
 File: figures/fig_structure.png Graphic file (type png)
 <use figures/fig_structure.png>
-Package pdftex.def Info: figures/fig_structure.png  used on input line 653.
+Package pdftex.def Info: figures/fig_structure.png  used on input line 705.
 (pdftex.def)             Requested size: 252.0pt x 202.71161pt.
-<figures/fig_contact.png, id=54, 462.0462pt x 233.1912pt>
+<figures/fig_contact.png, id=53, 462.0462pt x 233.1912pt>
 File: figures/fig_contact.png Graphic file (type png)
 <use figures/fig_contact.png>
-Package pdftex.def Info: figures/fig_contact.png  used on input line 661.
+Package pdftex.def Info: figures/fig_contact.png  used on input line 713.
 (pdftex.def)             Requested size: 252.0pt x 127.18452pt.
 
 
+[7 <./figures/fig_downsample.png> <./figures/fig_calibration.png> <./figures/fi
+g_importance.png>]
 
 
-[7 <./figures/fig_calibration.png> <./figures/fig_importance.png> <./figures/fi
-g_scaling.png>]
 
+[8 <./figures/fig_scaling.png> <./figures/fig_structure.png> <./figures/fig_con
+tact.png>]
 
 ** Conference Paper **
 Before submitting the final camera ready copy, remember to:
@@ -480,21 +488,24 @@ Before submitting the final camera ready copy, remember to:
 
 
 
-[8 <./figures/fig_structure.png> <./figures/fig_contact.png>]
-(./GenoFold_BIBM26.aux)
+
+
+[9
+
+] (./GenoFold_BIBM26.aux)
  ***********
 LaTeX2e <2024-11-01> patch level 2
 L3 programming layer <2025-01-18>
  ***********
  ) 
 Here is how much of TeX's memory you used:
- 4861 strings out of 473190
- 76558 string characters out of 5715800
- 485459 words of memory out of 5000000
- 28008 multiletter control sequences out of 15000+600000
+ 4875 strings out of 473190
+ 76763 string characters out of 5715800
+ 487561 words of memory out of 5000000
+ 28019 multiletter control sequences out of 15000+600000
  605635 words of font info for 135 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
- 57i,10n,65p,680b,259s stack positions out of 10000i,1000n,20000p,200000b,200000s
+ 57i,10n,65p,759b,259s stack positions out of 10000i,1000n,20000p,200000b,200000s
 </usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx10.pfb
 ></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmex10.pfb>
 </usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi10.pfb><
@@ -517,10 +528,10 @@ t/fonts/type1/urw/times/utmb8a.pfb></usr/local/texlive/2025/texmf-dist/fonts/ty
 pe1/urw/times/utmbi8a.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/urw/t
 imes/utmr8a.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/urw/times/utmri
 8a.pfb>
-Output written on GenoFold_BIBM26.pdf (8 pages, 990810 bytes).
+Output written on GenoFold_BIBM26.pdf (9 pages, 995000 bytes).
 PDF statistics:
- 159 PDF objects out of 1000 (max. 8388607)
- 88 compressed objects within 1 object stream
+ 162 PDF objects out of 1000 (max. 8388607)
+ 90 compressed objects within 1 object stream
  0 named destinations out of 1000 (max. 500000)
  41 words of extra memory for PDF output out of 10000 (max. 10000000)
 
