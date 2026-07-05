@@ -136,6 +136,28 @@ def table_cross_cell():
     _write("tab_cross_cell.tex", _tabular("@{}lcc@{}", header, lines))
 
 
+def table_5kb():
+    d = _load("cmp5kb.json")
+    if not d:
+        return
+    methods = [m for m in ["3DMax", "GenoFold", "ShRec3D", "FLAMINGO"] if m in d]
+    methods.sort(key=lambda m: -d[m]["dscc"])
+    gmeans = [d[m]["dscc"] for m in methods]
+    lines = []
+    for m in methods:
+        v = d[m]
+        g = f"\\textbf{{{v['dscc']:.3f}}}" if v["dscc"] == max(gmeans) else f"{v['dscc']:.3f}"
+        if v.get("dscc_std"):
+            g += f" $\\pm$ {v['dscc_std']:.3f}"
+        s = f"{v['dscc_short']:.3f}"
+        name = m + ("$^{\\ast}$" if m == "FLAMINGO" else "")
+        lines.append(f"{name} & {g} & {s} \\\\")
+    header = "\\textbf{Method} & \\textbf{global dSCC} & \\textbf{short-range dSCC}"
+    _write("tab_5kb.tex", _tabular("@{}lcc@{}", header, lines))
+    m = d.get("_meta", {})
+    print(f"  (5kb comparison: {m.get('window','?')}, {m.get('n_bins','?')} bins)")
+
+
 def macros():
     """Single-number \\newcommand macros for inline use in prose."""
     m = []
@@ -166,6 +188,13 @@ def macros():
         if rt:
             m.append(f"\\renewcommand{{\\gfretrainmin}}{{{min(rt):.3f}}}")
             m.append(f"\\renewcommand{{\\gfretrainmax}}{{{max(rt):.3f}}}")
+    frj = _load("flamingo_real.json")
+    if frj:
+        m.append(f"\\renewcommand{{\\flamfiftyglobal}}{{{frj['dscc_mean']:.2f}}}")
+        m.append(f"\\renewcommand{{\\flamfiftyshort}}{{{frj['dscc_short_mean']:.2f}}}")
+    c5 = _load("cmp5kb.json")
+    if c5 and "FLAMINGO" in c5:
+        m.append(f"\\renewcommand{{\\flamfiveglobal}}{{{c5['FLAMINGO']['dscc']:.2f}}}")
     sc = _load("scaling_50000.json")
     if sc:
         nb = max(v["n_bins"] for v in sc.values())
@@ -175,7 +204,7 @@ def macros():
 
 
 def main():
-    for fn in [table_benchmark, table_ablation, table_scaling, table_cross_cell, macros]:
+    for fn in [table_benchmark, table_ablation, table_scaling, table_cross_cell, table_5kb, macros]:
         try:
             fn()
         except Exception as e:  # noqa: BLE001

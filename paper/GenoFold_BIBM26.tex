@@ -34,6 +34,9 @@
 \providecommand{\gfretrainmax}{0.000}
 \providecommand{\gfmaxbins}{0}
 \providecommand{\gfnchrom}{0}
+\providecommand{\flamfiftyglobal}{0.27}
+\providecommand{\flamfiftyshort}{0.51}
+\providecommand{\flamfiveglobal}{0.66}
 \IfFileExists{tables/macros.tex}{\input{tables/macros.tex}}{}
 
 \def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
@@ -474,6 +477,35 @@ highlighted.}
 \label{fig:benchmark}
 \end{figure}
 
+\subsection{FLAMINGO at Its Native Resolution}
+The 50~kb comparison is unkind to FLAMINGO, which is built for 1--5~kb. We therefore
+re-ran the head-to-head at FLAMINGO's native 5~kb on a 10~Mb window of chromosome~22
+(chr22:20--30~Mb, 1{,}964 bins; the full arm exceeds this machine's memory at 5~kb).
+Table~\ref{tab:5kb} shows the resolution effect is large: FLAMINGO's global dSCC rises
+from \flamfiftyglobal{} at 50~kb to \flamfiveglobal{} at 5~kb, so its low 50~kb score
+reflects the operating regime, not a defect. Even at 5~kb, though, the methods that
+directly optimise all-pair distances lead on dSCC---3DMax and GenoFold both near
+$0.82$---because dSCC is precisely their objective and not FLAMINGO's multi-scale one;
+the gap to FLAMINGO nonetheless narrows from $\sim$0.55 to $\sim$0.16. GenoFold itself
+reconstructs the 2{,}000-bin window at 5~kb (global dSCC $0.81$, on par with 3DMax),
+showing the architecture holds at fine resolution; its $O(M^2)$ global attention is
+what currently keeps a \emph{whole-chromosome} 5~kb run off commodity hardware, the
+block-wise windowing of Section~\ref{sec:objective} being the intended remedy. This is a
+single-seed window comparison (FLAMINGO over three seeds) offered as a focused check,
+not a replacement for the main 50~kb study.
+
+\begin{table}[t]
+\caption{Native-resolution comparison at 5~kb on a 10~Mb window of GM12878
+chromosome~22 (chr22:20--30~Mb, 1{,}964 bins), scored by dSCC over the same bins.
+Best global mean in bold. $^{\ast}$: FLAMINGO from its published R package
+(mean\,$\pm$\,std over 3 seeds); other methods are single representative runs.
+At native resolution FLAMINGO's global dSCC rises from \flamfiftyglobal{} (50~kb,
+Table~\ref{tab:benchmark}) to \flamfiveglobal{}.}
+\label{tab:5kb}
+\centering
+\input{tables/tab_5kb.tex}
+\end{table}
+
 \subsection{Generalization}
 \label{sub:gen}
 Because GenoFold learns an inductive mapping rather than fitting free coordinates
@@ -661,10 +693,11 @@ because the node features were not flattened.
 The objective is self-supervised against Hi-C-derived distances, the field-standard
 target for these methods, but not against experimentally resolved structures;
 orthogonal validation with FISH distances is the natural next step and would
-convert dSCC agreement into an absolute accuracy claim. FLAMINGO is run from its
-published implementation but at 50~kb, below its native 1--5~kb resolution, which
-handicaps it on global all-pair dSCC relative to its short-range performance; a
-native-resolution FLAMINGO comparison is left to future work. Whole-chromosome
+convert dSCC agreement into an absolute accuracy claim. The main table runs
+FLAMINGO from its published implementation at 50~kb, below its native 1--5~kb
+resolution; the 5~kb comparison of Table~\ref{tab:5kb} recovers most of that handicap
+but is confined to a 10~Mb window by this machine's memory, so a full-chromosome
+native-resolution comparison remains future work. Whole-chromosome
 reconstruction is performed per chromosome, as is standard for this family; joint
 genome-scale reconstruction remains future work. The
 cell lines evaluated are human, so the species-embedding layer is exercised only on
