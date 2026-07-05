@@ -65,46 +65,24 @@ Author names and affiliations withheld}
 \maketitle
 
 \begin{abstract}
-The three-dimensional organization of the genome governs enhancer--promoter
-contact, the placement of topologically associating domain (TAD) boundaries,
-and the partition of the nucleus into active and inactive compartments.
-Computational reconstruction of this architecture from Hi-C data has advanced
-over the past decade, yet three limitations remain common: methods take a single
-input modality, they emit coordinates with no calibrated measure of reliability,
-and their preprocessing, inference, scoring, and visualization stages live in
-separate tools. We present GenoFold, a framework that integrates Hi-C contact
-matrices, per-bin sequencing coverage, sequence composition, and genomic metadata
-as co-equal inputs and reconstructs chromatin structure through a single
-six-stage pipeline. GenoFold encodes genomic loci as a contact graph and combines
-a four-layer GATv2 graph attention encoder with a six-layer Transformer to
-capture local interaction patterns and long-range chromosomal dependencies, and a
-neural decoder maps the learned representation to 3D coordinates. The network is
-trained end-to-end with a self-supervised distance-matching objective and
-evaluated on real Rao et al. in-situ Hi-C from three human cell lines. On GM12878
-chromosome~22 (\gfbins{} bins), across \gfnseeds{} seeds GenoFold reaches a distance
-Spearman correlation (dSCC) of $\gfdscc\pm\gfdsccstd$, statistically on par with the
-learned graph-network baseline HiC-GNN and within about a hundredth of the gradient
-distance optimizer 3DMax; at full depth the global-distance methods cluster within
-run-to-run noise. To check that the reconstructions capture physical structure and not
-only the Hi-C signal they were fit to, we compare them against distances measured by
-super-resolution chromatin tracing. On the chromosome-21 tracing regions of two cell
-lines (IMR90, K562) GenoFold's distances match the imaging at Spearman \fishgeno{} and
-\fishgenok{}, on par with the best distance optimizer and above the raw-Hi-C ceiling in
-both. Beyond this competitive accuracy, GenoFold provides three capabilities the baselines
-lack. First, it
-generalizes: held-out contact pairs score within a few thousandths of training pairs
-(\gftrain{} vs \gfheldout{}), and the method retrains cleanly on the shallower IMR90
-and K562 data (dSCC \gfretrainmin{}--\gfretrainmax{}); a GM12878-trained model even
-transfers to a new cell line without any retraining, recovering much of the structure
-that per-cell-line training achieves. Second, while the dense contact graph
-dominates reconstruction at full sequencing depth, its multi-modal features yield a
-small but monotonically growing advantage over a Hi-C-graph-only model as contacts
-are downsampled toward shallow-coverage conditions. Third, an uncertainty estimate
-combining a heteroscedastic variance head with Monte~Carlo dropout is positively
-correlated with per-bin reconstruction error (Spearman \gfcalib{}), and
-Integrated Gradients attributes each structure to its input modalities. The pipeline scales to whole chromosomes (up to \gfmaxbins{}
-bins across \gfnchrom{} chromosomes) at 25--50~kb on commodity CPU. Code, data
-loaders, and trained checkpoints are released.
+Chromatin folding sets which enhancers reach their target promoters and where the
+boundaries of topologically associating domains fall, so reconstructing genome
+architecture in three dimensions from Hi-C has become a standard step in reading
+regulatory structure. Existing reconstructors share three limitations: they use Hi-C
+alone, they return coordinates with no calibrated estimate of reliability, and their
+preprocessing, inference, and scoring stages live in separate tools. GenoFold addresses
+all three within one trained pipeline. It encodes genomic bins as a contact graph that
+carries Hi-C alongside sequencing coverage, sequence composition, and mappability, pairs
+a four-layer GATv2 encoder with a six-layer Transformer for local and long-range context,
+and decodes 3D coordinates under a self-supervised distance-matching objective. On GM12878
+chromosome~22 it reaches a distance Spearman correlation (dSCC) of $\gfdscc\pm\gfdsccstd$,
+level with HiC-GNN and within a hundredth of 3DMax. Compared against distances measured by
+super-resolution chromatin tracing, its reconstructions agree at Spearman \fishgeno{}
+(IMR90) and \fishgenok{} (K562), above the raw-Hi-C ceiling in both cell lines, so the
+agreement reflects physical structure rather than the training signal alone. GenoFold also
+attaches per-bin uncertainty that correlates with reconstruction error (Spearman
+\gfcalib{}), transfers to unseen cell lines without retraining, and runs whole chromosomes
+at 25--50~kb on commodity CPU.
 \end{abstract}
 
 \begin{IEEEkeywords}
@@ -763,7 +741,6 @@ access to the Rao et al. Hi-C datasets, the ENCODE Consortium and the UCSC Genom
 Browser for the mappability track and hg19 reference.
 
 \begin{thebibliography}{00}
-\footnotesize\setlength{\itemsep}{-1.0ex}\setlength{\parsep}{0pt}
 \bibitem{lieberman2009} E. Lieberman-Aiden et al., ``Comprehensive mapping of long-range interactions reveals folding principles of the human genome,'' \textit{Science}, vol. 326, no. 5950, pp. 289--293, 2009.
 \bibitem{dixon2012} J. R. Dixon et al., ``Topological domains in mammalian genomes identified by analysis of chromatin interactions,'' \textit{Nature}, vol. 485, no. 7398, pp. 376--380, 2012.
 \bibitem{rao2014} S. S. P. Rao et al., ``A 3D map of the human genome at kilobase resolution reveals principles of chromatin looping,'' \textit{Cell}, vol. 159, no. 7, pp. 1665--1680, 2014.
