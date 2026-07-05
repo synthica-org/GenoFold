@@ -108,10 +108,10 @@ GenoFold is evaluated head-to-head against established methods on the same real 
 |--------|------|
 | [**3DMax**](https://github.com/BDM-Lab/3DMax) | Gradient-based maximum-likelihood distance optimizer |
 | [**HiC-GNN**](https://doi.org/10.1016/j.csbj.2022.07.007) | Graph convolutional network on Laplacian-eigenmap features |
-| [**FLAMINGO**](https://www.nature.com/articles/s41467-022-30977-2) | Low-rank completion + chain-continuity (re-implemented core) |
 | [**ShRec3D**](https://www.nature.com/articles/nmeth.3104) | Shortest-path distance completion + classical MDS |
+| [**FLAMINGO**](https://www.nature.com/articles/s41467-022-30270-2) | Multi-scale domain reconstruction — **the real published `FLAMINGOr` R package** |
 
-All baselines are re-implemented in one framework (`genofold_pipeline/experiments/baselines.py`) so they consume the identical valid-bin contact matrix and are scored by the identical metric.
+3DMax, HiC-GNN and ShRec3D are re-implemented in one framework (`genofold_pipeline/experiments/baselines.py`) so they consume the identical valid-bin contact matrix. FLAMINGO is run from its actual published R package on the same contacts (`flamingo_run/run_flamingo_chr22.R`) and scored by the same metric (`experiments/flamingo_real.py`). Note FLAMINGO is built for 1–5 kb resolution; run at 50 kb its short-range (≤1 Mb) dSCC is competitive (~0.51) but its coarse inter-domain backbone lowers global all-pair dSCC — see the paper for the honest comparison.
 
 ---
 

@@ -50,22 +50,31 @@ def _bold_max(vals, i, fmt="{:.3f}"):
 
 def table_benchmark():
     ms = _load("multiseed_benchmark.json")
-    order = ["ShRec3D", "3DMax", "HiC-GNN", "FLAMINGO-style", "GenoFold"]
+    fl = _load("flamingo_real.json")   # real FLAMINGO (replaces the -style proxy)
+    order = ["ShRec3D", "3DMax", "HiC-GNN", "FLAMINGO", "GenoFold"]
     if ms:
-        order = [m for m in order if m in ms]
-        means = [ms[m]["dscc_mean"] for m in order]
+        # merge: use multiseed for all but FLAMINGO; use flamingo_real.json for real FLAMINGO
+        data = {m: ms[m] for m in ms if m != "FLAMINGO-style"}
+        if fl:
+            data["FLAMINGO"] = dict(dscc_mean=fl["dscc_mean"], dscc_std=fl.get("dscc_std", 0.0),
+                                    tad_mean=fl["tad_mean"], tad_std=fl.get("tad_std", 0.0),
+                                    n_seeds=fl.get("n_seeds", 1), seconds=float("nan"))
+        order = [m for m in order if m in data]
+        means = [data[m]["dscc_mean"] for m in order]
         lines = []
-        for k, m in enumerate(order):
-            name = m.replace("FLAMINGO-style", "FLAMINGO-style$^\\dagger$")
-            mean, std, n_s = ms[m]["dscc_mean"], ms[m]["dscc_std"], ms[m]["n_seeds"]
-            tmn, tsd = ms[m]["tad_mean"], ms[m]["tad_std"]
+        for m in order:
+            name = m + ("$^\\ddagger$" if m == "FLAMINGO" else "")
+            mean, std, n_s = data[m]["dscc_mean"], data[m]["dscc_std"], data[m]["n_seeds"]
+            tmn, tsd = data[m]["tad_mean"], data[m]["tad_std"]
             dcell = (f"\\textbf{{{mean:.3f}}}" if mean == max(means) else f"{mean:.3f}")
             dcell += (f" $\\pm$ {std:.3f}" if n_s > 1 else "")
             tcell = f"{tmn:.2f}" + (f" $\\pm$ {tsd:.2f}" if n_s > 1 else "")
-            lines.append(f"{name} & {dcell} & {tcell} & {ms[m]['seconds']:.1f} \\\\")
+            sec = data[m]["seconds"]
+            scell = "---" if (sec != sec) else f"{sec:.1f}"   # nan -> em dash
+            lines.append(f"{name} & {dcell} & {tcell} & {scell} \\\\")
         header = ("\\textbf{Method} & \\textbf{dSCC} & \\textbf{TAD $F_1$} & \\textbf{Time (s)}")
         _write("tab_benchmark.tex", _tabular("@{}lccc@{}", header, lines, tabcolsep="4pt"))
-        print(f"  (multiseed benchmark, {ms[order[0]]['n_seeds']} seeds)")
+        print(f"  (benchmark; real FLAMINGO {'merged' if fl else 'MISSING'})")
         return
     # fallback: single-seed
     d = _load("main_benchmark.json")

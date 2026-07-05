@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.27 (TeX Live 2025) (preloaded format=pdflatex 2025.3.24)  6 JUL 2026 01:09
+This is pdfTeX, Version 3.141592653-2.6-1.40.27 (TeX Live 2025) (preloaded format=pdflatex 2025.3.24)  6 JUL 2026 03:08
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -405,67 +405,68 @@ File: ot1pcr.fd 2001/06/04 font definitions for OT1/pcr.
 [3 <./images/image1.png>]
 
 LaTeX Font Info:    Trying to load font information for OMS+pcr on input line 4
-17.
+20.
 (/usr/local/texlive/2025/texmf-dist/tex/latex/psnfss/omspcr.fd
 File: omspcr.fd 
 )
 LaTeX Font Info:    Font shape `OMS/pcr/m/n' in size <10> not available
-(Font)              Font shape `OMS/cmsy/m/n' tried instead on input line 417.
+(Font)              Font shape `OMS/cmsy/m/n' tried instead on input line 420.
 
 
 [4] (./tables/tab_benchmark.tex)
 <figures/fig_benchmark.png, id=36, 570.4512pt x 224.037pt>
 File: figures/fig_benchmark.png Graphic file (type png)
 <use figures/fig_benchmark.png>
-Package pdftex.def Info: figures/fig_benchmark.png  used on input line 453.
+Package pdftex.def Info: figures/fig_benchmark.png  used on input line 470.
 (pdftex.def)             Requested size: 252.0pt x 98.9697pt.
 
 
-(./tables/tab_cross_cell.tex) (./tables/tab_ablation.tex)
+(./tables/tab_cross_cell.tex)
 
-[5 <./figures/fig_benchmark.png>]
-<figures/fig_downsample.png, id=44, 390.258pt x 231.264pt>
+[5 <./figures/fig_benchmark.png>] (./tables/tab_ablation.tex)
+<figures/fig_downsample.png, id=45, 390.258pt x 231.264pt>
 File: figures/fig_downsample.png Graphic file (type png)
 <use figures/fig_downsample.png>
-Package pdftex.def Info: figures/fig_downsample.png  used on input line 526.
+Package pdftex.def Info: figures/fig_downsample.png  used on input line 543.
 (pdftex.def)             Requested size: 252.0pt x 149.33527pt.
-<figures/fig_calibration.png, id=45, 570.933pt x 224.037pt>
+
+
+<figures/fig_calibration.png, id=46, 570.933pt x 224.037pt>
 File: figures/fig_calibration.png Graphic file (type png)
 <use figures/fig_calibration.png>
-Package pdftex.def Info: figures/fig_calibration.png  used on input line 548.
+Package pdftex.def Info: figures/fig_calibration.png  used on input line 565.
 (pdftex.def)             Requested size: 252.0pt x 98.88766pt.
-
-
-<figures/fig_importance.png, id=46, 361.35pt x 194.6472pt>
+<figures/fig_importance.png, id=47, 361.35pt x 194.6472pt>
 File: figures/fig_importance.png Graphic file (type png)
 <use figures/fig_importance.png>
-Package pdftex.def Info: figures/fig_importance.png  used on input line 569.
+Package pdftex.def Info: figures/fig_importance.png  used on input line 586.
 (pdftex.def)             Requested size: 252.0pt x 135.74422pt.
-(./tables/tab_scaling.tex)
-<figures/fig_scaling.png, id=47, 426.393pt x 231.264pt>
-File: figures/fig_scaling.png Graphic file (type png)
-<use figures/fig_scaling.png>
-Package pdftex.def Info: figures/fig_scaling.png  used on input line 596.
-(pdftex.def)             Requested size: 252.0pt x 136.67747pt.
-<figures/fig_structure.png, id=48, 349.7868pt x 281.3712pt>
-File: figures/fig_structure.png Graphic file (type png)
-<use figures/fig_structure.png>
-Package pdftex.def Info: figures/fig_structure.png  used on input line 604.
-(pdftex.def)             Requested size: 252.0pt x 202.71161pt.
-<figures/fig_contact.png, id=49, 462.0462pt x 233.1912pt>
-File: figures/fig_contact.png Graphic file (type png)
-<use figures/fig_contact.png>
-Package pdftex.def Info: figures/fig_contact.png  used on input line 612.
-(pdftex.def)             Requested size: 252.0pt x 127.18452pt.
 
 
 [6 <./figures/fig_downsample.png> <./figures/fig_calibration.png> <./figures/fi
-g_importance.png>]
+g_importance.png>] (./tables/tab_scaling.tex)
+<figures/fig_scaling.png, id=54, 426.393pt x 231.264pt>
+File: figures/fig_scaling.png Graphic file (type png)
+<use figures/fig_scaling.png>
+Package pdftex.def Info: figures/fig_scaling.png  used on input line 613.
+(pdftex.def)             Requested size: 252.0pt x 136.67747pt.
+<figures/fig_structure.png, id=55, 349.7868pt x 281.3712pt>
+File: figures/fig_structure.png Graphic file (type png)
+<use figures/fig_structure.png>
+Package pdftex.def Info: figures/fig_structure.png  used on input line 621.
+(pdftex.def)             Requested size: 252.0pt x 202.71161pt.
+<figures/fig_contact.png, id=56, 462.0462pt x 233.1912pt>
+File: figures/fig_contact.png Graphic file (type png)
+<use figures/fig_contact.png>
+Package pdftex.def Info: figures/fig_contact.png  used on input line 629.
+(pdftex.def)             Requested size: 252.0pt x 127.18452pt.
+
 
 
 
 [7 <./figures/fig_scaling.png> <./figures/fig_structure.png> <./figures/fig_con
 tact.png>]
+
 
 ** Conference Paper **
 Before submitting the final camera ready copy, remember to:
@@ -479,11 +480,7 @@ Before submitting the final camera ready copy, remember to:
 
 
 
-
-
-[8
-
-] (./GenoFold_BIBM26.aux)
+[8] (./GenoFold_BIBM26.aux)
  ***********
 LaTeX2e <2024-11-01> patch level 2
 L3 programming layer <2025-01-18>
@@ -492,11 +489,11 @@ L3 programming layer <2025-01-18>
 Here is how much of TeX's memory you used:
  4851 strings out of 473190
  76382 string characters out of 5715800
- 484419 words of memory out of 5000000
+ 485419 words of memory out of 5000000
  28001 multiletter control sequences out of 15000+600000
  605635 words of font info for 135 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
- 57i,9n,65p,510b,259s stack positions out of 10000i,1000n,20000p,200000b,200000s
+ 57i,9n,65p,680b,259s stack positions out of 10000i,1000n,20000p,200000b,200000s
 </usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx10.pfb
 ></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmex10.pfb>
 </usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi10.pfb><
@@ -519,7 +516,7 @@ t/fonts/type1/urw/times/utmb8a.pfb></usr/local/texlive/2025/texmf-dist/fonts/ty
 pe1/urw/times/utmbi8a.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/urw/t
 imes/utmr8a.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/urw/times/utmri
 8a.pfb>
-Output written on GenoFold_BIBM26.pdf (8 pages, 986929 bytes).
+Output written on GenoFold_BIBM26.pdf (8 pages, 988354 bytes).
 PDF statistics:
  159 PDF objects out of 1000 (max. 8388607)
  88 compressed objects within 1 object stream

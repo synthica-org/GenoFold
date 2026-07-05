@@ -41,13 +41,18 @@ def _load(name):
 
 def fig_benchmark():
     ms = _load("multiseed_benchmark.json")
+    fl = _load("flamingo_real.json")
     d = _load("main_benchmark.json")
     if ms:
-        methods = sorted(ms.keys(), key=lambda m: ms[m]["dscc_mean"])
-        dscc = [ms[m]["dscc_mean"] for m in methods]
-        err = [ms[m]["dscc_std"] for m in methods]
-        tad = [ms[m]["tad_mean"] for m in methods]
-        terr = [ms[m]["tad_std"] for m in methods]
+        data = {m: ms[m] for m in ms if m != "FLAMINGO-style"}
+        if fl:
+            data["FLAMINGO"] = dict(dscc_mean=fl["dscc_mean"], dscc_std=fl.get("dscc_std", 0.0),
+                                    tad_mean=fl["tad_mean"], tad_std=fl.get("tad_std", 0.0))
+        methods = sorted(data.keys(), key=lambda m: data[m]["dscc_mean"])
+        dscc = [data[m]["dscc_mean"] for m in methods]
+        err = [data[m]["dscc_std"] for m in methods]
+        tad = [data[m]["tad_mean"] for m in methods]
+        terr = [data[m]["tad_std"] for m in methods]
     elif d:
         methods = sorted(d.keys(), key=lambda m: d[m]["dscc"])
         dscc = [d[m]["dscc"] for m in methods]; err = [0] * len(methods)
@@ -58,7 +63,7 @@ def fig_benchmark():
     fig, ax = plt.subplots(1, 2, figsize=(8, 3.2))
     ax[0].barh(methods, dscc, xerr=err, color=colors, capsize=3,
                error_kw=dict(ecolor="#334155", lw=1))
-    ax[0].set_xlabel("dSCC"); ax[0].set_xlim(0.75, 0.95)
+    ax[0].set_xlabel("dSCC"); ax[0].set_xlim(0, 1.0)
     ax[0].set_title("Distance Spearman correlation")
     for i, v in enumerate(dscc):
         ax[0].text(v + err[i] + 0.004, i, f"{v:.3f}", va="center", fontsize=8)

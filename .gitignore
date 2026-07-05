@@ -34,6 +34,13 @@ genofold_pipeline/data_cache/
 genofold_pipeline/results/structures/
 *.npz
 
+# FLAMINGO run artifacts (keep the run script + norm files; ignore temp/outputs)
+flamingo_run/Domain_data/
+flamingo_run/Genomic_loc/
+flamingo_run/*.contacts.txt
+flamingo_run/coords_seed*.tsv
+flamingo_run/chr22_50kb_flamingo_coords.tsv
+
 # Web app generated outputs
 genofold_web/results/
 genofold_web/uploads/

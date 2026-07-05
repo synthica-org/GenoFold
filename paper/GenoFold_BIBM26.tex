@@ -72,8 +72,8 @@ trained end-to-end with a self-supervised distance-matching objective and
 evaluated on real Rao et al. in-situ Hi-C from three human cell lines. On GM12878
 chromosome~22 (\gfbins{} bins), across \gfnseeds{} seeds GenoFold reaches a distance
 Spearman correlation (dSCC) of $\gfdscc\pm\gfdsccstd$, statistically on par with the
-learned graph-network baseline HiC-GNN and within about a hundredth of the strongest
-distance optimizers (3DMax, FLAMINGO-style)---the methods cluster within run-to-run
+learned graph-network baseline HiC-GNN and within about a hundredth of the gradient
+distance optimizer 3DMax---the global-distance methods cluster within run-to-run
 noise---while adding three capabilities none of them provides. First, it
 generalizes: held-out contact pairs score within a few thousandths of training pairs
 (\gftrain{} vs \gfheldout{}), and the method retrains cleanly on the shallower IMR90
@@ -147,7 +147,7 @@ than a post-hoc surrogate. Everything runs in one invocation on commodity CPU.
 
 The contributions are: (i) a trained multi-modal GATv2--Transformer reconstructor
 with a self-supervised objective; (ii) a head-to-head quantitative benchmark
-against 3DMax, HiC-GNN, FLAMINGO-style, and ShRec3D on real GM12878 Hi-C using
+against 3DMax, HiC-GNN, the published FLAMINGO, and ShRec3D on real GM12878 Hi-C using
 dSCC and TAD-boundary reproducibility; (iii) a multi-modality ablation showing the
 node modalities are near-redundant with the dense contact graph at full depth but
 increasingly useful as Hi-C is downsampled toward shallow coverage; (iv) a
@@ -399,16 +399,19 @@ called on the observed matrix).
 
 \subsection{Baselines}
 GenoFold is compared against 3DMax~\cite{oluwadare2018}, HiC-GNN~\cite{hicgnn2022},
-FLAMINGO~\cite{flamingo2022}, and ShRec3D~\cite{lesne2014}, re-implemented in a
-single framework so that every method consumes the identical valid-bin contact
-submatrix and is scored by the identical dSCC. ShRec3D performs shortest-path
-distance completion and classical MDS; 3DMax optimizes coordinates directly to
-maximize distance agreement with random restarts; HiC-GNN trains a graph
-convolutional network on Laplacian-eigenmap features with the same objective as
-GenoFold. The FLAMINGO comparator (marked $\dagger$ in Table~\ref{tab:benchmark})
-re-implements FLAMINGO's core low-rank-plus-chain-continuity idea rather than its
-full published pipeline, and should be read as a representative of that family, not
-an exact reproduction.
+and ShRec3D~\cite{lesne2014}, re-implemented in a single framework so that every method
+consumes the identical valid-bin contact submatrix and is scored by the identical
+dSCC. ShRec3D performs shortest-path distance completion and classical MDS; 3DMax
+optimizes coordinates directly to maximize distance agreement with random restarts;
+HiC-GNN trains a graph convolutional network on Laplacian-eigenmap features with the
+same objective as GenoFold. FLAMINGO~\cite{flamingo2022} is run from its \emph{published}
+R implementation (\texttt{FLAMINGOr}, Wang et al.) on the same contacts at 50~kb, then
+scored by the same dSCC on the shared valid bins; because it is a multi-scale method
+built for 1--5~kb, this is below its intended resolution, which we account for when
+reading its result (marked $\ddagger$ in Table~\ref{tab:benchmark}). Running the
+original tool---rather than a re-implementation---also surfaced, and we report, that a
+simple low-rank-plus-continuity proxy does not capture FLAMINGO's behaviour at this
+scale.
 
 \subsection{Implementation and Reproducibility}
 GenoFold is implemented in Python 3.12 with PyTorch~2 and PyTorch~Geometric and
@@ -425,24 +428,38 @@ data are public and fetched by the released loaders.
 Table~\ref{tab:benchmark} compares all methods on GM12878 chromosome~22, each over
 \gfnseeds{} seeds (ShRec3D is deterministic). Run-to-run variation for the
 learned/gradient methods is of order $0.01$--$0.02$ dSCC, comparable to the gaps
-between methods, so we report mean\,$\pm$\,std and refrain from over-reading a
-fractional ranking. GenoFold attains a dSCC of $\gfdscc\pm\gfdsccstd$, statistically
-on par with the learned graph-network baseline HiC-GNN, within about a hundredth of
-the two pure distance optimizers (3DMax and FLAMINGO-style, which fit free coordinates
-directly to the contacts they are scored on), and ahead of ShRec3D. It is also
-competitive on TAD-boundary reproducibility. The point is not a dSCC margin---on which
-the field's methods cluster within noise---but that GenoFold reaches this cluster while
-being the only method that also supplies error-correlated uncertainty, modality
-attribution, and cross-cell transfer (Sections~\ref{sub:gen}--\ref{sub:calib}). The
-reconstructed structure and its agreement with the observed contact map are shown in
-Figs.~\ref{fig:structure} and~\ref{fig:contact}.
+between them, so we report mean\,$\pm$\,std and refrain from over-reading a fractional
+ranking. Among the methods that optimise global pairwise-distance agreement, GenoFold
+attains a dSCC of $\gfdscc\pm\gfdsccstd$: statistically on par with the learned
+graph-network baseline HiC-GNN, within about a hundredth of the gradient distance
+optimiser 3DMax (the best mean), and ahead of ShRec3D. It is also competitive on
+TAD-boundary reproducibility. These four methods cluster within noise; the point is
+not a dSCC margin but that GenoFold reaches this cluster while being the only method
+that also supplies error-correlated uncertainty, modality attribution, and cross-cell
+transfer (Sections~\ref{sub:gen}--\ref{sub:calib}).
+
+FLAMINGO is a different kind of method and its low global dSCC in
+Table~\ref{tab:benchmark} should be read with that in mind. We ran the published
+FLAMINGO implementation (Wang et al.~\cite{flamingo2022}); it is a multi-scale method
+designed for 1--5~kb resolution, reconstructing per-domain structure at high resolution
+and stitching domains onto a coarse inter-domain backbone. Run here at 50~kb for
+comparability, it reconstructs local structure well---short-range ($\le$1~Mb, intra-domain)
+dSCC is $0.51$, competitive with the cluster---but its $1$~Mb backbone places distant
+domains imprecisely, so global dSCC over all pairs, which are dominated by long-range
+contacts, falls to $0.27$. FLAMINGO optimises high-resolution local geometry, not
+global all-pair distance at coarse resolution; the two objectives simply differ, and we
+report both numbers rather than reduce FLAMINGO to the metric it is not built for. The
+reconstructed GenoFold structure and its agreement with the observed contact map are
+shown in Figs.~\ref{fig:structure} and~\ref{fig:contact}.
 
 \begin{table}[t]
 \caption{Reconstruction accuracy on GM12878 chromosome~22 (\gfbins{} bins, 50~kb),
 all methods scored by dSCC over the same observed pairs, mean\,$\pm$\,std over
 \gfnseeds{} seeds (ShRec3D deterministic). TAD $F_1$ is boundary reproducibility;
-time is per-run wall-clock on CPU. $\dagger$: FLAMINGO-style re-implementation
-(see text). Best mean in bold; methods overlap within noise.}
+time is per-run wall-clock on CPU. Best mean in bold. $\ddagger$: the published
+FLAMINGO~\cite{flamingo2022} run at 50~kb, below its native 1--5~kb resolution;
+its short-range ($\le$1~Mb) dSCC is $0.51$ and global dSCC is dominated by the
+long-range pairs its coarse backbone handles least well (see text).}
 \label{tab:benchmark}
 \centering
 \input{tables/tab_benchmark.tex}
@@ -644,10 +661,12 @@ because the node features were not flattened.
 The objective is self-supervised against Hi-C-derived distances, the field-standard
 target for these methods, but not against experimentally resolved structures;
 orthogonal validation with FISH distances is the natural next step and would
-convert dSCC agreement into an absolute accuracy claim. The FLAMINGO comparator is a
-re-implementation of the core method rather than the published pipeline and is
-labeled as such. Whole-chromosome reconstruction is performed per chromosome, as is
-standard for this family; joint genome-scale reconstruction remains future work. The
+convert dSCC agreement into an absolute accuracy claim. FLAMINGO is run from its
+published implementation but at 50~kb, below its native 1--5~kb resolution, which
+handicaps it on global all-pair dSCC relative to its short-range performance; a
+native-resolution FLAMINGO comparison is left to future work. Whole-chromosome
+reconstruction is performed per chromosome, as is standard for this family; joint
+genome-scale reconstruction remains future work. The
 cell lines evaluated are human, so the species-embedding layer is exercised only on
 one species. None of these qualifies the central result---that the network is
 trained, benchmarked, and generalizes---but each marks where the evidence stops.
@@ -656,9 +675,9 @@ trained, benchmarked, and generalizes---but each marks where the evidence stops.
 GenoFold contributes a trained multi-modal graph representation, a joint
 GATv2--Transformer encoder with a self-supervised distance-matching objective, and
 an integrated confidence and explainability layer. On real Rao et al. in-situ Hi-C
-it reconstructs chromatin structure at accuracy competitive with 3DMax, HiC-GNN,
-FLAMINGO-style, and ShRec3D, while uniquely adding per-bin uncertainty that correlates
-with error, multi-modal features that grow useful as Hi-C is sparsified, and
+it reconstructs chromatin structure at accuracy competitive with the global-distance
+methods 3DMax, HiC-GNN, and ShRec3D, while uniquely adding per-bin uncertainty that
+correlates with error, multi-modal features that grow useful as Hi-C is sparsified, and
 cross-cell-line transfer without retraining, and while scaling to whole chromosomes at
 25--50~kb on commodity CPU.
 The system moves from the architecture-only demonstration it began as to a trained,
@@ -677,7 +696,7 @@ Browser for the mappability track and hg19 reference.
 \bibitem{rao2014} S. S. P. Rao et al., ``A 3D map of the human genome at kilobase resolution reveals principles of chromatin looping,'' \textit{Cell}, vol. 159, no. 7, pp. 1665--1680, 2014.
 \bibitem{oluwadare2018} O. Oluwadare, Y. Zhang, and J. Cheng, ``A maximum likelihood algorithm for reconstructing 3D structures of human chromosomes from chromosomal contact data,'' \textit{BMC Genomics}, vol. 19, no. 1, p. 161, 2018.
 \bibitem{hicgnn2022} M. U. Hicks, D. Ay, and O. Oluwadare, ``HiC-GNN: A generalizable model for 3D chromosome reconstruction using graph convolutional neural networks,'' \textit{Comput. Struct. Biotechnol. J.}, vol. 20, pp. 3835--3843, 2022.
-\bibitem{flamingo2022} J. Liu et al., ``FLAMINGO reconstructs 3D genome structures from Hi-C data,'' \textit{Nat. Commun.}, vol. 13, no. 1, p. 2971, 2022.
+\bibitem{flamingo2022} H. Wang, J. Yang, Y. Zhang, J. Qian, and J. Wang, ``Reconstruct high-resolution 3D genome structures for diverse cell-types using FLAMINGO,'' \textit{Nat. Commun.}, vol. 13, no. 1, p. 2645, 2022.
 \bibitem{lesne2014} A. Lesne, J. Riposo, P. Roger, A. Cournac, and J. Mozziconacci, ``3D genome reconstruction from chromosomal contacts,'' \textit{Nat. Methods}, vol. 11, no. 11, pp. 1141--1143, 2014.
 \bibitem{imakaev2012} M. Imakaev et al., ``Iterative correction of Hi-C data reveals hallmarks of chromosome organization,'' \textit{Nat. Methods}, vol. 9, no. 10, pp. 999--1003, 2012.
 \bibitem{pyg2019} M. Fey and J. E. Lenssen, ``Fast graph representation learning with PyTorch Geometric,'' in \textit{ICLR Workshop on Representation Learning on Graphs and Manifolds}, 2019.
