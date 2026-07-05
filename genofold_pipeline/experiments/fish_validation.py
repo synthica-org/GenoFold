@@ -42,35 +42,40 @@ from experiments import metrics as M
 
 BASE = os.path.dirname(os.path.dirname(__file__))
 RESULTS = os.path.join(BASE, "results")
-BINTU_CSV = os.path.join(CACHE_DIR, "bintu", "IMR90_chr21-28-30Mb.csv")
-# Per-cell 3D tracing coordinates (Bintu et al. 2018), fetched once and cached.
-BINTU_URL = ("https://raw.githubusercontent.com/BogdanBintu/ChromatinImaging/"
-             "master/Data/IMR90_chr21-28-30Mb.csv")
 
-# Bintu image chr21:28-30Mb in *hg38* (65 x 30 kb segments). Rao 2014 Hi-C is
-# hg19, so we window the Hi-C at the lifted-over coordinate: hg38 28,000,000 ->
-# hg19 29,372,319 (UCSC liftOver, near-constant +1.37 Mb over this 2 Mb region).
-# //HIC_RES lands on the hg19 29.37 Mb bin, which an offset scan confirms
-# maximises raw Hi-C/FISH concordance (Spearman 0.97, cf. Bintu's Pearson ~0.92);
+# Bintu image chr21:28-30Mb in *hg38* (30 kb segments) across several cell lines.
+# Rao 2014 Hi-C is hg19, so we window the Hi-C at the lifted-over coordinate:
+# hg38 28,000,000 -> hg19 29,372,319 (UCSC liftOver, near-constant +1.37 Mb over
+# this 2 Mb region). //HIC_RES lands on the hg19 29.37 Mb bin, which an offset scan
+# confirms maximises raw Hi-C/FISH concordance (Spearman 0.97, cf. Bintu's ~0.92);
 # the raw hg38 coordinate mis-registers the Hi-C by 1.37 Mb (anchor drops to 0.67).
+CELLS = ["IMR90", "K562"]   # both have Bintu tracing AND matched Rao 2014 Hi-C
 REGION_START = 29_372_319   # hg19, lifted from hg38 chr21:28,000,000
 SEG_BP = 30_000
-HIC_RES = 10_000           # 3 x 10kb == one 30kb imaged segment
-CELL = "IMR90"
+HIC_RES = 10_000            # 3 x 10kb == one 30kb imaged segment
 CHROM = "chr21"
 ALPHA = 0.25
-MIN_DETECT = 100           # require >= this many copies detecting BOTH loci for a
+MIN_DETECT = 100            # require >= this many copies detecting BOTH loci for a
                            # reliable median distance (out of ~4,900)
+
+
+def _bintu_paths(cell):
+    """Cached CSV path + Bintu-repo URL of the per-cell tracing coordinates."""
+    csv = os.path.join(CACHE_DIR, "bintu", f"{cell}_chr21-28-30Mb.csv")
+    url = ("https://raw.githubusercontent.com/BogdanBintu/ChromatinImaging/"
+           f"master/Data/{cell}_chr21-28-30Mb.csv")
+    return csv, url
 
 
 # ---------------------------------------------------------------------------
 # Imaging: median single-cell pairwise-distance matrix
 # ---------------------------------------------------------------------------
 
-def imaging_median_distance(csv=BINTU_CSV):
+def imaging_median_distance(cell):
     """(K,K) median pairwise centroid distance (nm) over single copies, plus an
     integer (K,K) count of copies detecting both loci. Segment index is 1-based."""
-    _download(BINTU_URL, csv)          # fetch once from the Bintu repo, then cache
+    csv, url = _bintu_paths(cell)
+    _download(url, csv)                 # fetch once from the Bintu repo, then cache
     df = pd.read_csv(csv, skiprows=1)  # skip the "(in nm)" comment line
     df.columns = [c.strip() for c in df.columns]
     K = int(df["Segment index"].max())
@@ -100,15 +105,15 @@ def imaging_median_distance(csv=BINTU_CSV):
 # Model: reconstruct the region from Hi-C, coarse-grain to the 30 kb grid
 # ---------------------------------------------------------------------------
 
-def _window_dataset(K):
-    """IMR90 chr21 Hi-C at 10 kb, windowed to the imaged region (3*K bins)."""
-    full = build_chrom_dataset(CELL, CHROM, HIC_RES)      # cached
+def _window_dataset(K, cell):
+    """`cell` chr21 Hi-C at 10 kb, windowed to the imaged region (3*K bins)."""
+    full = build_chrom_dataset(cell, CHROM, HIC_RES)      # cached
     w0 = REGION_START // HIC_RES
     w1 = w0 + K * (SEG_BP // HIC_RES)                      # 3 bins per segment
     sl = slice(w0, w1)
     C = full.contact_matrix[sl, sl].astype(np.float32).copy()
     np.fill_diagonal(C, 0.0)
-    ds = ChromDataset(cell_line=CELL, chrom=CHROM, hic_chrom="21", resolution=HIC_RES,
+    ds = ChromDataset(cell_line=cell, chrom=CHROM, hic_chrom="21", resolution=HIC_RES,
                       contact_matrix=C, coverage=C.sum(1).astype(np.float32),
                       gc_content=full.gc_content[sl], mappability=full.mappability[sl],
                       sequences=list(full.sequences[sl]), chrom_start=w0 * HIC_RES)
@@ -155,18 +160,18 @@ def _score(model_D, Dimg, seg_ok):
     return float(rho), float(pr), int(m.sum())
 
 
-def main():
-    print("== FISH validation: GenoFold vs Bintu 2018 IMR90 chr21:28-30Mb ==")
-    Dimg, ndet, K = imaging_median_distance()
-    reliable = ndet >= MIN_DETECT
-    print(f"imaging: {K} segments; median distances from up to "
-          f"{int(ndet.max())} single-copy detections/pair")
-
+def _run_cell(cell, seeds=(0, 1, 2)):
+    """Full FISH validation for one cell line -> per-method result dict."""
     from experiments.prep import prepare
     from experiments.train import train_genofold
     from experiments.baselines import shrec3d, threedmax
 
-    ds, C_window = _window_dataset(K)
+    print(f"\n== FISH validation: {cell} chr21:28-30Mb ==")
+    Dimg, ndet, K = imaging_median_distance(cell)
+    reliable = ndet >= MIN_DETECT
+    print(f"imaging: {K} segments; up to {int(ndet.max())} single-copy detections/pair")
+
+    ds, C_window = _window_dataset(K, cell)
     prep = prepare(ds)
     Cv = prep.contact_valid
     vidx = prep.valid_idx.astype(np.int64)
@@ -174,27 +179,25 @@ def main():
 
     # GenoFold over several seeds (mean +/- std); baselines are deterministic /
     # best-of-restarts single runs (as in the 5 kb table).
-    seeds = [0, 1, 2]
     gf_cen = [_coarse_grain(
         train_genofold(prep.data, Cv, epochs=300, eval_every=50, mc_samples=1,
                        layout=prep.layout, held_out=0.0, report_final=True, seed=s,
-                       log_prefix=f"[GenoFold-FISH s{s}] ", verbose=False).coords,
+                       log_prefix=f"[GenoFold-FISH {cell} s{s}] ", verbose=False).coords,
         vidx, K) for s in seeds]
     base_cen = {name: _coarse_grain(fn(Cv, alpha=ALPHA), vidx, K)
                 for name, fn in [("3DMax", threedmax), ("ShRec3D", shrec3d)]}
 
-    # a segment is scored only if EVERY method produced a centroid for it
-    seg_ok = np.ones(K, bool)
+    seg_ok = np.ones(K, bool)               # score a segment only if every method has it
     for c in list(base_cen.values()) + gf_cen:
         seg_ok &= np.isfinite(c).all(1)
     Dimg_r = np.where(reliable, Dimg, np.nan)   # reliable-median pairs only
 
     out = {"_meta": dict(region_hg38="chr21:28.00-29.95Mb", region_hic_hg19="chr21:29.37-31.32Mb",
-                         cell=CELL, n_segments=int(K), n_segments_scored=int(seg_ok.sum()),
+                         cell=cell, n_segments=int(K), n_segments_scored=int(seg_ok.sum()),
                          hic_res=HIC_RES, min_detections=MIN_DETECT,
                          metric="Spearman(model_dist, FISH_median_dist)",
-                         source="Bintu 2018 Science; Rao 2014 GSE63525 IMR90")}
-    print(f"\n{'method':12s} {'FISH-Spearman':>16s} {'FISH-Pearson(log)':>18s} {'pairs':>7s}")
+                         source=f"Bintu 2018 Science; Rao 2014 GSE63525 {cell}")}
+    print(f"{'method':12s} {'FISH-Spearman':>16s} {'FISH-Pearson(log)':>18s} {'pairs':>7s}")
 
     gf = [_score(_seg_distance(c), Dimg_r, seg_ok) for c in gf_cen]
     gf_rho = [x[0] for x in gf]; gf_pr = [x[1] for x in gf]; npairs = gf[0][2]
@@ -207,15 +210,18 @@ def main():
         out[name] = dict(fish_spearman=rho, fish_pearson_log=pr, n_pairs=np_)
         print(f"{name:12s} {rho:16.3f} {pr:18.3f} {np_:7d}")
 
-    # anchor: raw Hi-C wish distance vs FISH (reconstruction-free ceiling)
     rho, pr, npairs = _score(hic_wish_distance_30kb(C_window, K), Dimg_r, seg_ok)
     out["HiC_wish"] = dict(fish_spearman=rho, fish_pearson_log=pr, n_pairs=npairs)
     print(f"{'HiC-wish*':12s} {rho:14.3f} {pr:18.3f} {npairs:7d}   (*raw Hi-C, no reconstruction)")
+    return out
 
+
+def main(cells=CELLS):
+    out = {cell: _run_cell(cell) for cell in cells}
     os.makedirs(RESULTS, exist_ok=True)
     with open(os.path.join(RESULTS, "fish_validation.json"), "w") as fh:
         json.dump(out, fh, indent=2)
-    print("\nwrote results/fish_validation.json")
+    print(f"\nwrote results/fish_validation.json ({', '.join(cells)})")
     return out
 
 

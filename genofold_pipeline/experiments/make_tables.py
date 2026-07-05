@@ -162,23 +162,32 @@ def table_fish():
     d = _load("fish_validation.json")
     if not d:
         return
-    recon = sorted([m for m in ["GenoFold", "3DMax", "ShRec3D"] if m in d],
-                   key=lambda m: -d[m]["fish_spearman"])
-    order = recon + (["HiC_wish"] if "HiC_wish" in d else [])
-    best = max(d[m]["fish_spearman"] for m in recon)
+    cells = [c for c in ["IMR90", "K562"] if c in d]
+    if not cells:
+        return
+    methods = ["GenoFold", "3DMax", "ShRec3D", "HiC_wish"]
     label = {"HiC_wish": "Raw Hi-C$^{\\dagger}$"}
+    best = {c: max(d[c][m]["fish_spearman"] for m in ["GenoFold", "3DMax", "ShRec3D"] if m in d[c])
+            for c in cells}
     lines = []
-    for m in order:
-        v = d[m]
-        sp = (f"\\textbf{{{v['fish_spearman']:.3f}}}"
-              if v["fish_spearman"] == best else f"{v['fish_spearman']:.3f}")
-        if v.get("fish_spearman_std"):
-            sp += f" $\\pm$ {v['fish_spearman_std']:.3f}"
-        lines.append(f"{label.get(m, m)} & {sp} & {v['fish_pearson_log']:.3f} \\\\")
-    header = "\\textbf{Method} & \\textbf{FISH Spearman} & \\textbf{FISH Pearson}"
-    _write("tab_fish.tex", _tabular("@{}lcc@{}", header, lines))
-    mm = d.get("_meta", {})
-    print(f"  (FISH: {mm.get('n_segments','?')} segments, {mm.get('region_hic_hg19','?')})")
+    for m in methods:
+        vals = []
+        for c in cells:
+            v = d[c].get(m)
+            if not v:
+                vals.append("---"); continue
+            s = f"{v['fish_spearman']:.3f}"
+            if m != "HiC_wish" and v["fish_spearman"] == best[c]:
+                s = f"\\textbf{{{s}}}"
+            if v.get("fish_spearman_std") is not None:
+                s += f" $\\pm$ {v['fish_spearman_std']:.3f}"
+            vals.append(s)
+        lines.append(f"{label.get(m, m)} & " + " & ".join(vals) + " \\\\")
+    colspec = "@{}l" + "c" * len(cells) + "@{}"
+    header = "\\textbf{Method} & " + " & ".join(f"\\textbf{{{c}}}" for c in cells)
+    _write("tab_fish.tex", _tabular(colspec, header, lines))
+    mm = d[cells[0]].get("_meta", {})
+    print(f"  (FISH: {mm.get('n_segments','?')} segments x {len(cells)} cells, {mm.get('region_hic_hg19','?')})")
 
 
 def macros():
@@ -219,14 +228,18 @@ def macros():
     if c5 and "FLAMINGO" in c5:
         m.append(f"\\renewcommand{{\\flamfiveglobal}}{{{c5['FLAMINGO']['dscc']:.2f}}}")
     fv = _load("fish_validation.json")
-    if fv and "GenoFold" in fv:
-        m.append(f"\\renewcommand{{\\fishgeno}}{{{fv['GenoFold']['fish_spearman']:.3f}}}")
-        m.append(f"\\renewcommand{{\\fishgenostd}}{{{fv['GenoFold']['fish_spearman_std']:.3f}}}")
-        if "3DMax" in fv:
-            m.append(f"\\renewcommand{{\\fishmax}}{{{fv['3DMax']['fish_spearman']:.3f}}}")
-        if "HiC_wish" in fv:
-            m.append(f"\\renewcommand{{\\fishanchor}}{{{fv['HiC_wish']['fish_spearman']:.3f}}}")
-        m.append(f"\\renewcommand{{\\fishnseg}}{{{fv['_meta']['n_segments']}}}")
+    if fv and "IMR90" in fv:
+        im = fv["IMR90"]
+        m.append(f"\\renewcommand{{\\fishgeno}}{{{im['GenoFold']['fish_spearman']:.3f}}}")
+        m.append(f"\\renewcommand{{\\fishgenostd}}{{{im['GenoFold']['fish_spearman_std']:.3f}}}")
+        m.append(f"\\renewcommand{{\\fishmax}}{{{im['3DMax']['fish_spearman']:.3f}}}")
+        m.append(f"\\renewcommand{{\\fishanchor}}{{{im['HiC_wish']['fish_spearman']:.3f}}}")
+        m.append(f"\\renewcommand{{\\fishnseg}}{{{im['_meta']['n_segments']}}}")
+    if fv and "K562" in fv:
+        k = fv["K562"]
+        m.append(f"\\renewcommand{{\\fishgenok}}{{{k['GenoFold']['fish_spearman']:.3f}}}")
+        m.append(f"\\renewcommand{{\\fishmaxk}}{{{k['3DMax']['fish_spearman']:.3f}}}")
+        m.append(f"\\renewcommand{{\\fishanchork}}{{{k['HiC_wish']['fish_spearman']:.3f}}}")
     sc = _load("scaling_50000.json")
     if sc:
         nb = max(v["n_bins"] for v in sc.values())
