@@ -34,7 +34,9 @@ for reconstructing three-dimensional genome architecture
 
 ## Overview
 
-GenoFold is a research project developing an AI-driven, end-to-end pipeline for reconstructing three-dimensional genome architecture. By integrating Hi-C contact data, next-generation sequencing (NGS) reads, and genomic metadata across numerous species, GenoFold aims to improve the accuracy, robustness, and interpretability of 3D genome models compared with existing computational approaches.
+GenoFold is an AI-driven, end-to-end pipeline for reconstructing three-dimensional genome architecture. It integrates Hi-C contact data, per-bin sequencing coverage, sequence composition, and genomic metadata (real GC content and mappability), and reconstructs chromatin structure through a single six-stage pipeline built on a GATv2 graph encoder and a Transformer.
+
+The network is **trained** end-to-end with a self-supervised distance-matching objective and **benchmarked** on real Rao et al. in-situ Hi-C from three human cell lines (GM12878, IMR90, K562). On GM12878 chromosome 22 it reaches a distance Spearman correlation (dSCC) on par with 3DMax, HiC-GNN, FLAMINGO-style, and ShRec3D, while uniquely adding calibrated per-bin uncertainty, cross-cell-line transfer without retraining, and Integrated-Gradients modality attribution, and scaling to whole chromosomes at 25–50 kb on commodity CPU. See [`paper/GenoFold_BIBM26.pdf`](paper/GenoFold_BIBM26.pdf) for the full study.
 
 ---
 
@@ -100,13 +102,32 @@ flowchart LR
 
 ## Benchmark Comparisons
 
-GenoFold will be evaluated against established methods across complementary dimensions:
+GenoFold is evaluated head-to-head against established methods on the same real GM12878 contact matrix, using distance Spearman correlation (dSCC) and TAD-boundary reproducibility:
 
-| Method | Evaluation Focus |
-|--------|-------------------|
-| [**HiC-GNN**](pubmed.ncbi.nlm.nih) | Graph learning and cross-dataset transfer capabilities |
-| [**FLAMINGO**](https://www.nature.com/articles/s41467-022-30270-2) | Robustness to sparse data and high-resolution reconstruction |
-| [**3DMax**](https://github.com/BDM-Lab/3DMax) | Classic maximum-likelihood, distance-based baseline |
+| Method | Role |
+|--------|------|
+| [**3DMax**](https://github.com/BDM-Lab/3DMax) | Gradient-based maximum-likelihood distance optimizer |
+| [**HiC-GNN**](https://doi.org/10.1016/j.csbj.2022.07.007) | Graph convolutional network on Laplacian-eigenmap features |
+| [**FLAMINGO**](https://www.nature.com/articles/s41467-022-30977-2) | Low-rank completion + chain-continuity (re-implemented core) |
+| [**ShRec3D**](https://www.nature.com/articles/nmeth.3104) | Shortest-path distance completion + classical MDS |
+
+All baselines are re-implemented in one framework (`genofold_pipeline/experiments/baselines.py`) so they consume the identical valid-bin contact matrix and are scored by the identical metric.
+
+---
+
+## Reproducing the Experiments
+
+The full empirical study (training, benchmarking, ablation, cross-cell-line transfer, uncertainty calibration, scaling) runs from real public data with no manual downloads:
+
+```bash
+cd genofold_pipeline
+pip install -r ../requirements.txt hic-straw pyBigWig
+GENOFOLD_DEVICE=cpu python -m experiments.run_experiments   # ~1 h on CPU
+python -m experiments.make_tables      # LaTeX tables -> paper/tables/
+python -m experiments.make_figures     # figures      -> paper/figures/
+```
+
+Real inputs are streamed and cached automatically: Hi-C from the Rao et al. `.hic` files (GSE63525), the ENCODE/CRG hg19 mappability track, and the hg19 reference sequence. Each experiment module has a runnable self-check (`python -m experiments.<module>`).
 
 ---
 

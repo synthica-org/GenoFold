@@ -1,0 +1,19 @@
+{
+  "GM12878 (train)": {
+    "dscc": 0.8922857793225905,
+    "mode": "in-domain",
+    "n_bins": 701
+  },
+  "IMR90": {
+    "dscc_transfer": 0.630390800466884,
+    "dscc_retrained": 0.7950945408245204,
+    "n_bins": 701,
+    "mode": "transfer"
+  },
+  "K562": {
+    "dscc_transfer": 0.653401391088785,
+    "dscc_retrained": 0.7536446175514627,
+    "n_bins": 701,
+    "mode": "transfer"
+  }
+}

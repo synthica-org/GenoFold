@@ -29,6 +29,11 @@ data/real/
 data/reference/
 outputs/
 
+# GenoFold experiment caches and large intermediate structures
+genofold_pipeline/data_cache/
+genofold_pipeline/results/structures/
+*.npz
+
 # Web app generated outputs
 genofold_web/results/
 genofold_web/uploads/
