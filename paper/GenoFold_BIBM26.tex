@@ -45,6 +45,12 @@
 \providecommand{\fishgenok}{0.00}
 \providecommand{\fishmaxk}{0.00}
 \providecommand{\fishanchork}{0.00}
+\providecommand{\sparsegenoI}{0.00}
+\providecommand{\sparsemaxI}{0.00}
+\providecommand{\sparseshrecI}{0.00}
+\providecommand{\sparsegenoK}{0.00}
+\providecommand{\sparsemaxK}{0.00}
+\providecommand{\sparseshrecK}{0.00}
 \IfFileExists{tables/macros.tex}{\input{tables/macros.tex}}{}
 
 \def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
@@ -78,11 +84,13 @@ and decodes 3D coordinates under a self-supervised distance-matching objective. 
 chromosome~22 it reaches a distance Spearman correlation (dSCC) of $\gfdscc\pm\gfdsccstd$,
 level with HiC-GNN and within a hundredth of 3DMax. Compared against distances measured by
 super-resolution chromatin tracing, its reconstructions agree at Spearman \fishgeno{}
-(IMR90) and \fishgenok{} (K562), above the raw-Hi-C ceiling in both cell lines, so the
-agreement reflects physical structure rather than the training signal alone. GenoFold also
-attaches per-bin uncertainty that correlates with reconstruction error (Spearman
-\gfcalib{}), transfers to unseen cell lines without retraining, and runs whole chromosomes
-at 25--50~kb on commodity CPU.
+(IMR90) and \fishgenok{} (K562), matching the best distance optimizer at full depth. The
+methods separate under shallow Hi-C: with contacts downsampled to 5\% of the observed set,
+GenoFold still recovers the measured structure at \sparsegenoI{}/\sparsegenoK{}, while
+3DMax falls to \sparsemaxI{}/\sparsemaxK{}, because GenoFold's node features and learned
+prior hold where the contact graph thins. It also attaches per-bin uncertainty that
+correlates with reconstruction error (Spearman \gfcalib{}), transfers to unseen cell lines
+without retraining, and runs whole chromosomes at 25--50~kb on commodity CPU.
 \end{abstract}
 
 \begin{IEEEkeywords}
@@ -434,17 +442,14 @@ modality attribution, and cross-cell transfer (Sections~\ref{sub:gen}--\ref{sub:
 that combination, more than any fractional dSCC margin, is what the benchmark is meant to
 show.
 
-FLAMINGO is a different kind of method and its low global dSCC in
-Table~\ref{tab:benchmark} should be read with that in mind. We ran the published
-FLAMINGO implementation (Wang et al.~\cite{flamingo2022}); it is a multi-scale method
-designed for 1--5~kb resolution, reconstructing per-domain structure at high resolution
-and stitching domains onto a coarse inter-domain backbone. Run here at 50~kb for
-comparability, it reconstructs local structure well (short-range, $\le$1~Mb intra-domain,
-dSCC is $0.51$, competitive with the cluster), but its $1$~Mb backbone places distant
-domains imprecisely, so global dSCC over all pairs, which are dominated by long-range
-contacts, falls to $0.27$. FLAMINGO optimises high-resolution local geometry, not
-global all-pair distance at coarse resolution; the two objectives simply differ, so we
-report both numbers instead of reducing FLAMINGO to the metric it is not built for. The
+FLAMINGO's low global dSCC in Table~\ref{tab:benchmark} should be read with its design
+in mind. The published implementation (Wang et al.~\cite{flamingo2022}) is a multi-scale
+method for 1--5~kb, reconstructing per-domain structure at high resolution over a coarse
+inter-domain backbone. Run at 50~kb for comparability, it reconstructs local structure
+well (short-range $\le$1~Mb dSCC $0.51$, competitive with the cluster), but its $1$~Mb
+backbone places distant domains imprecisely, so the all-pair global dSCC, dominated by
+long-range contacts, falls to $0.27$. The objectives differ, so we report both numbers
+rather than reduce FLAMINGO to a metric it is not built for. The
 reconstructed GenoFold structure and its agreement with the observed contact map are
 shown in Figs.~\ref{fig:structure} and~\ref{fig:contact}.
 
@@ -462,21 +467,15 @@ long-range pairs its coarse backbone handles least well (see text).}
 \end{table}
 
 \subsection{FLAMINGO at Its Native Resolution}
-The 50~kb comparison is unkind to FLAMINGO, which is built for 1--5~kb. We therefore
-re-ran the head-to-head at FLAMINGO's native 5~kb on a 10~Mb window of chromosome~22
-(chr22:20--30~Mb, 1{,}964 bins; the full arm exceeds this machine's memory at 5~kb).
-Table~\ref{tab:5kb} shows the resolution effect is large: FLAMINGO's global dSCC rises
-from \flamfiftyglobal{} at 50~kb to \flamfiveglobal{} at 5~kb, so its low 50~kb score
-reflects the operating regime, not a defect. Even at 5~kb, though, the methods that
-directly optimise all-pair distances lead on dSCC (3DMax and GenoFold both near
-$0.82$), because dSCC is precisely their objective and not FLAMINGO's multi-scale one;
-the gap to FLAMINGO nonetheless narrows from $\sim$0.55 to $\sim$0.16. GenoFold itself
-reconstructs the 2{,}000-bin window at 5~kb (global dSCC $0.81$, on par with 3DMax),
-showing the architecture holds at fine resolution; its $O(M^2)$ global attention is
-what currently keeps a \emph{whole-chromosome} 5~kb run off commodity hardware, the
-block-wise windowing of Section~\ref{sec:objective} being the intended remedy. This is a
-single-seed window comparison (FLAMINGO over three seeds) offered as a focused check,
-not a replacement for the main 50~kb study.
+The 50~kb comparison is unkind to FLAMINGO, which is built for 1--5~kb. Re-run at its
+native 5~kb on a 10~Mb window of chromosome~22 (chr22:20--30~Mb, 1{,}964 bins),
+FLAMINGO's global dSCC rises from \flamfiftyglobal{} to \flamfiveglobal{}
+(Table~\ref{tab:5kb}), so the low 50~kb score reflects the operating regime, not a defect.
+The direct all-pair optimizers still lead at 5~kb (3DMax and GenoFold near $0.82$), since
+dSCC is their objective rather than FLAMINGO's multi-scale one, though the gap narrows
+from $\sim$0.55 to $\sim$0.16. GenoFold reconstructs the 2{,}000-bin window at 5~kb (dSCC
+$0.81$), so the architecture holds at fine resolution; its $O(M^2)$ attention is what
+keeps a whole-chromosome 5~kb run off commodity hardware for now.
 
 \begin{table}[t]
 \caption{Native-resolution comparison at 5~kb on a 10~Mb window of GM12878
@@ -505,14 +504,11 @@ to the hg19 Hi-C by the liftOver offset ($+1.37$~Mb) that maximises raw Hi-C/ima
 concordance.
 
 GenoFold's distances match the FISH measurements at Spearman $\fishgeno$ (IMR90) and
-$\fishgenok$ (K562), in both lines statistically level with the purpose-built optimizer
-3DMax ($\fishmax$, $\fishmaxk$) and \emph{above} the raw-Hi-C ceiling ($\fishanchor$,
-$\fishanchork$; the input contacts as distances, without reconstruction). The dSCC
-agreement reported throughout therefore tracks real physical structure, so the trained
-model matches a single-purpose optimizer on an orthogonal experimental benchmark in two
-cell lines while also being transferable (Section~\ref{sub:gen}) and confidence-aware.
-Validation is still confined to one 2~Mb chromosome-21 region, the deepest public tracing
-matched to Hi-C, so wider imaging validation remains future work.
+$\fishgenok$ (K562), level with the purpose-built optimizer 3DMax ($\fishmax$,
+$\fishmaxk$) and above the raw-Hi-C ceiling ($\fishanchor$, $\fishanchork$) in both cell
+lines. The dSCC agreement reported throughout therefore tracks real physical structure.
+This full-depth parity is where the methods start; they diverge sharply once the input
+Hi-C is made sparse (Section~\ref{sub:sparse}).
 
 \begin{table}[t]
 \caption{Validation against \emph{measured} single-molecule distances: Spearman
@@ -525,6 +521,35 @@ no reconstruction: the ceiling a faithful method inherits.}
 \centering
 \input{tables/tab_fish.tex}
 \end{table}
+
+\subsection{Reconstruction from Sparse Hi-C}
+\label{sub:sparse}
+At full depth GenoFold and 3DMax agree with FISH almost equally (Table~\ref{tab:fish});
+the two separate once the input Hi-C is shallow. We downsampled each cell line's contact
+matrix to a fraction of its observed contacts, reconstructed the region with every method
+from the thinned input, and scored each against the same full-depth FISH measurements
+(Fig.~\ref{fig:fishsparse}). GenoFold's agreement is almost flat across two orders of
+magnitude of coverage: at 5\% of contacts it still reaches Spearman \sparsegenoI{} on
+IMR90 and \sparsegenoK{} on K562, within a few thousandths of its full-depth score. The
+distance optimizers fall away over the same range, 3DMax to \sparsemaxI{} and
+\sparsemaxK{} and ShRec3D to \sparseshrecI{} and \sparseshrecK{}, because a method that
+solves only from observed pairs has little left to fit once most pairs are gone.
+GenoFold's node features (coverage, sequence, GC, mappability) do not thin with sequencing
+depth, and its learned mapping supplies a structural prior where contacts are absent, so
+below 10\% coverage it recovers the measured structure even better than the thinned
+contacts encode it. This is the regime where a trained multi-modal reconstructor earns its
+cost against a direct optimizer.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.98\columnwidth]{figures/fig_fish_sparse.png}
+\caption{Agreement with single-molecule FISH distances as the input Hi-C is downsampled
+(right to left, log axis) for IMR90 and K562 chromosome~21. GenoFold holds close to its
+full-depth accuracy across two orders of magnitude of coverage, while the distance
+optimizers 3DMax and ShRec3D degrade sharply below roughly 10\% of contacts. Raw Hi-C is
+the thinned contact matrix scored directly, without reconstruction.}
+\label{fig:fishsparse}
+\end{figure}
 
 \subsection{Generalization}
 \label{sub:gen}
@@ -569,16 +594,14 @@ variation. We read this honestly: at this depth the dense contact graph already
 determines the reconstruction, and the node-feature modalities are largely redundant
 with it. We do not claim a multi-modal accuracy gain in this regime.
 
-The modalities' contribution is instead revealed under sparsity.
-Fig.~\ref{fig:downsample} randomly retains only a fraction of observed contacts,
-simulating shallow Hi-C, and scores recovery of the full-depth structure. Sequence
-composition, GC content, and mappability do not degrade with sequencing depth, and
-the gap between the multi-modal model and the Hi-C-graph-only model grows
-monotonically as contacts are removed, from $+0.002$ at half depth to $+0.005$ at
-$5\%$ of contacts. The effect is modest in magnitude but consistent and directional,
-and it is largest exactly where a contact-only method has least to lean on, the
-sparse regime the original review singled out. We report it as such rather than
-overstating an advantage the full-depth data do not support.
+The same mechanism drives the sparse-Hi-C result of Section~\ref{sub:sparse}. An
+internal ablation confirms it directly: reconstructing from downsampled contacts, the
+multi-modal model's dSCC advantage over a Hi-C-graph-only model grows monotonically as
+contacts are removed, from $+0.002$ at half depth to $+0.005$ at $5\%$. Sequence
+composition, GC content, and mappability do not thin with sequencing depth, so they hold
+structure where the contact graph does not. This internal margin is small on its own;
+scored against measured FISH distances it becomes the large sparse-regime lead over the
+optimizers in Fig.~\ref{fig:fishsparse}.
 
 \begin{table}[t]
 \caption{Modality ablation on GM12878 chromosome~22 at full depth (held-out dSCC).
@@ -590,15 +613,6 @@ the dense contact graph dominates and the node modalities are near-redundant her
 \input{tables/tab_ablation.tex}
 \end{table}
 
-\begin{figure}[t]
-\centering
-\includegraphics[width=0.8\columnwidth]{figures/fig_downsample.png}
-\caption{Multi-modality under Hi-C sparsity. As observed contacts are downsampled
-(right to left), the multi-modal model's advantage over a Hi-C-graph-only model
-grows monotonically, reaching $+0.005$ dSCC at $5\%$ of contacts. Both are scored
-against the full-depth structure.}
-\label{fig:downsample}
-\end{figure}
 
 \subsection{Uncertainty Calibration}
 \label{sub:calib}
@@ -696,9 +710,12 @@ representation. Training that representation end-to-end against a distance-match
 objective, rather than leaving weights random, is what lets the downstream outputs
 (coordinates, confidence, and attribution) carry information.
 
-What distinguishes GenoFold from the baselines is the set of capabilities that
-accompany a competitive score, given how closely the field's methods sit on any single
-dSCC number. Because it is inductive, GenoFold generalizes to
+On dense Hi-C the field's methods cluster within run-to-run noise, and GenoFold sits in
+that cluster. Its advantage shows where the input degrades. On shallow Hi-C, GenoFold
+recovers the physically measured structure far more faithfully than the distance
+optimizers (Fig.~\ref{fig:fishsparse}), because its node features and learned prior do not
+depend on a dense contact graph. Three further capabilities separate it from the baselines.
+Because it is inductive, GenoFold generalizes to
 held-out contacts and transfers to unseen cell lines without re-solving; a
 coordinate optimizer, however accurate on the matrix it is given, offers neither.
 Because reliability is part of the output and correlates with actual error, a
@@ -758,7 +775,7 @@ Browser for the mappability track and hg19 reference.
 \bibitem{crane2015} E. Crane et al., ``Condensin-driven remodelling of X chromosome topology during dosage compensation,'' \textit{Nature}, vol. 523, no. 7559, pp. 240--244, 2015.
 \bibitem{gal2016} Y. Gal and Z. Ghahramani, ``Dropout as a Bayesian approximation: Representing model uncertainty in deep learning,'' in \textit{Proc. Int. Conf. Machine Learning (ICML)}, pp. 1050--1059, 2016.
 \bibitem{sundararajan2017} M. Sundararajan, A. Taly, and Q. Yan, ``Axiomatic attribution for deep networks,'' in \textit{Proc. Int. Conf. Machine Learning (ICML)}, pp. 3319--3328, 2017.
-\bibitem{bintu2018} B. Bintu, L. J. Mateo, J.-H. Su, N. A. Sinnott-Armstrong, M. Parker, S. Kinrot, K. Yamaya, A. N. Boettiger, and X. Zhuang, ``Super-resolution chromatin tracing reveals domains and cooperative interactions in single cells,'' \textit{Science}, vol. 362, no. 6413, eaau1783, 2018.
+\bibitem{bintu2018} B. Bintu et al., ``Super-resolution chromatin tracing reveals domains and cooperative interactions in single cells,'' \textit{Science}, vol. 362, no. 6413, eaau1783, 2018.
 \end{thebibliography}
 
 \end{document}

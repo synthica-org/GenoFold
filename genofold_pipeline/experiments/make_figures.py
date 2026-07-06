@@ -220,9 +220,36 @@ def fig_importance():
     fig.tight_layout(); fig.savefig(os.path.join(OUT, "fig_importance.png")); plt.close(fig)
 
 
+def fig_fish_sparse():
+    d = _load("fish_sparse.json")
+    if not d:
+        return
+    cells = [c for c in ["IMR90", "K562"] if c in d]
+    series = [("GenoFold", BLUE, "o-"), ("3DMax", ORANGE, "s--"),
+              ("ShRec3D", GREEN, "^--"), ("HiC_wish", GREY, "d:")]
+    labels = {"GenoFold": "GenoFold", "3DMax": "3DMax", "ShRec3D": "ShRec3D",
+              "HiC_wish": "raw Hi-C"}
+    fig, axes = plt.subplots(1, len(cells), figsize=(7.2, 2.5), sharey=True)
+    if len(cells) == 1:
+        axes = [axes]
+    for ax, cell in zip(axes, cells):
+        rows = sorted(d[cell].values(), key=lambda v: v["keep"])
+        keep = [v["keep"] * 100 for v in rows]
+        for name, col, style in series:
+            ax.plot(keep, [v[name] for v in rows], style, color=col,
+                    label=labels[name], markersize=5)
+        ax.set_xscale("log"); ax.invert_xaxis()
+        ax.set_xlabel("% Hi-C contacts retained (log)")
+        ax.set_title(cell)
+    axes[0].set_ylabel("FISH agreement (Spearman)")
+    axes[-1].legend(fontsize=8, loc="lower left", frameon=False)
+    fig.tight_layout(); fig.savefig(os.path.join(OUT, "fig_fish_sparse.png")); plt.close(fig)
+
+
 def main():
     for fn in [fig_benchmark, fig_structure, fig_contact, fig_calibration,
-               fig_ablation, fig_scaling, fig_cross_cell, fig_importance, fig_downsample]:
+               fig_ablation, fig_scaling, fig_cross_cell, fig_importance, fig_downsample,
+               fig_fish_sparse]:
         try:
             fn(); print(f"ok  {fn.__name__}")
         except Exception as e:  # noqa: BLE001

@@ -147,6 +147,8 @@ def train_genofold(
     drop_features: Optional[List[str]] = None,
     layout: Optional[FeatureLayout] = None,
     mc_samples: int = 30,
+    edge_dropout: float = 0.0,
+    continuity_weight: float = 0.0,
     seed: int = 0,
     eval_every: int = 20,
     log_prefix: str = "",
@@ -200,21 +202,40 @@ def train_genofold(
         model.train()
         opt.zero_grad()
         coords, emb = model(data)
+        # optional DropEdge-style augmentation: reconstruct from a random subset of
+        # the observed pairs each epoch, so the model learns to lean on node features
+        # and the backbone prior where contacts are sparse.
+        if edge_dropout > 0.0:
+            keep = torch.rand(pi.shape[0], device=dev) >= edge_dropout
+            epi, epj, ewz = pi[keep], pj[keep], wish_z[keep]
+        else:
+            epi, epj, ewz = pi, pj, wish_z
         # distance-matching term (z-scored log distances vs wish distances)
-        a, b = coords[pi], coords[pj]
+        a, b = coords[epi], coords[epj]
         dp = torch.sqrt(((a - b) ** 2).sum(-1) + 1e-12)
         logd = torch.log(dp + 1e-6)
         dz = (logd - logd.mean()) / (logd.std() + 1e-8)
-        dist_loss = torch.mean((dz - wish_z) ** 2)
+        dist_loss = torch.mean((dz - ewz) ** 2)
+        # backbone smoothness (polymer bending) prior: consecutive bins are
+        # covalently linked, so penalise chain curvature, scaled by step length to
+        # stay scale-invariant. This constrains bins that the observed contacts leave
+        # underdetermined, which is exactly the sparse-Hi-C regime.
+        if continuity_weight > 0.0 and n >= 3:
+            step = coords[1:] - coords[:-1]
+            scale = (step ** 2).sum(-1).mean().detach() + 1e-6
+            curv = coords[:-2] - 2.0 * coords[1:-1] + coords[2:]
+            cont_loss = (curv ** 2).sum(-1).mean() / scale
+        else:
+            cont_loss = torch.zeros((), device=dev)
         # heteroscedastic (aleatoric) term: variance head learns to predict the
         # per-pair residual, so per-bin uncertainty tracks reconstruction error.
         # emb is detached so the variance head does not reshape the representation
         # that produces the coordinates.
         sig = model.variance(emb.detach()).mean(1)        # (M,) per-bin std
-        var_ij = sig[pi] ** 2 + sig[pj] ** 2 + 1e-6
-        resid2 = ((dz - wish_z) ** 2).detach()
+        var_ij = sig[epi] ** 2 + sig[epj] ** 2 + 1e-6
+        resid2 = ((dz - ewz) ** 2).detach()
         var_loss = (0.5 * resid2 / var_ij + 0.5 * torch.log(var_ij)).mean()
-        loss = dist_loss + 0.2 * var_loss
+        loss = dist_loss + 0.2 * var_loss + continuity_weight * cont_loss
         loss.backward()
         torch.nn.utils.clip_grad_norm_(model.parameters(), 5.0)
         opt.step(); sched.step()

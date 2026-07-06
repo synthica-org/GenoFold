@@ -240,6 +240,14 @@ def macros():
         m.append(f"\\renewcommand{{\\fishgenok}}{{{k['GenoFold']['fish_spearman']:.3f}}}")
         m.append(f"\\renewcommand{{\\fishmaxk}}{{{k['3DMax']['fish_spearman']:.3f}}}")
         m.append(f"\\renewcommand{{\\fishanchork}}{{{k['HiC_wish']['fish_spearman']:.3f}}}")
+    fsp = _load("fish_sparse.json")
+    if fsp:
+        for cell, suf in [("IMR90", "I"), ("K562", "K")]:
+            if cell in fsp and "5%" in fsp[cell]:
+                r = fsp[cell]["5%"]
+                m.append(f"\\renewcommand{{\\sparsegeno{suf}}}{{{r['GenoFold']:.3f}}}")
+                m.append(f"\\renewcommand{{\\sparsemax{suf}}}{{{r['3DMax']:.3f}}}")
+                m.append(f"\\renewcommand{{\\sparseshrec{suf}}}{{{r['ShRec3D']:.3f}}}")
     sc = _load("scaling_50000.json")
     if sc:
         nb = max(v["n_bins"] for v in sc.values())
