@@ -22,7 +22,7 @@ required by the symposium).
 | Path | Contents |
 |---|---|
 | `main.tex` / `main.pdf` | Submitted version (from the uploaded package). |
-| `ughs.tex` / `ughs.pdf` | Camera-ready revision: 5-page limit, responds to both reviewer reports. |
+| `ughs.tex` / `ughs.pdf` | Camera-ready revision: fills the 5-page limit, responds to both reviewer reports. |
 | `figures/` | All figure PNGs (`fig_*.png` plots, `pipeline_image*.png` diagrams). |
 | `archive/` | Earlier long draft `GenoFold_BIBM26.tex` and its `tables/`. |
 

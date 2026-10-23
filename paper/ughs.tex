@@ -112,6 +112,23 @@ frequencies (136), GC and mappability (2), and normalized position (1).
 Edges carry the log contact weight and log genomic distance, stored as a
 PyTorch Geometric object~\cite{pyg2019}.
 
+\begin{table}[t]
+\caption{Node features ($F=140$). Only the coverage track depends on
+sequencing depth; contacts enter through the edges.}
+\label{tab:features}
+\centering
+\begin{tabular}{@{}lcl@{}}
+\toprule
+Group & Dim & Source \\
+\midrule
+Coverage & 1 & RPKM read depth, GC/mappability-corrected \\
+Sequence & 136 & RC-collapsed 4-mer frequencies (hg19) \\
+Metadata & 2 & GC content; CRG 50-mer mappability \\
+Position & 1 & Normalized bin index \\
+\bottomrule
+\end{tabular}
+\end{table}
+
 \textit{Encoder and decoder.} Four GATv2 layers~\cite{brody2022} (8 heads
 with residual connections in the first three, 4 averaged heads in the
 last, $d=64$) supply local context. Six pre-norm Transformer
@@ -135,6 +152,11 @@ is a Gaussian negative log-likelihood that trains the variance head. We
 use Adam (learning rate $10^{-3}$, cosine schedule, weight decay
 $10^{-5}$) for 300 epochs. Held-out dSCC on a 20\% pair holdout levels
 off by epoch 150 and moves by less than 0.002 over the last 50 epochs.
+No early stopping is used; all results come from the epoch-300
+checkpoint. Held-out dSCC (0.890) and training dSCC (0.890) differ by
+less than 0.001, so the model is not fitting individual pairs. A
+per-matrix optimizer such as 3DMax has no counterpart to this test,
+since it fits every observed pair by construction.
 
 \textit{Uncertainty.} The variance head predicts per-axis log-variances
 $v_{ik}$; $T$ Monte Carlo dropout passes~\cite{gal2016} add an epistemic
@@ -164,7 +186,14 @@ distances between 65 consecutive 30~kb segments of chromosome~21 (hg19
 chr21:29.37--31.32~Mb), imaged in thousands of IMR90 and K562 cells. Each
 method reconstructs the region from the matched 10~kb Hi-C; coordinates
 are coarse-grained onto the imaging grid and correlated with the imaged
-medians.
+medians. The tracing coordinates are annotated on hg38; we register them
+to the hg19 Hi-C by the liftOver offset ($+1.37$~Mb) that maximizes
+agreement between raw Hi-C and imaging, and apply the same registration
+to every method. For the sparse experiments, each contact matrix is
+thinned by keeping a random fraction of its nonzero bin pairs (values
+unchanged, symmetry preserved); each method then reconstructs from the
+thinned matrix alone. This removes pairs rather than reads, so it
+mimics loss of coverage more crudely than read-level subsampling.
 
 % ===================================================================
 \section{Results}
@@ -180,9 +209,27 @@ Transformer attention and the dropout passes.
 FLAMINGO is built for 1--5~kb data, and at 50~kb its dSCC is 0.27, which
 says more about the setting than the method; we therefore leave it out of
 Table~\ref{tab:benchmark}. At its native 5~kb, on chr22:20--30~Mb (1{,}964
-bins), FLAMINGO reaches 0.655, against 0.820 for 3DMax, 0.814 for GenoFold
+bins), FLAMINGO reaches 0.655 (Table~\ref{tab:5kb}), against 0.820 for 3DMax, 0.814 for GenoFold
 and 0.783 for ShRec3D. These dSCC numbers favour the all-pair optimizers,
 since dSCC is close to their objective and not to FLAMINGO's.
+
+\begin{table}[t]
+\caption{Native-resolution comparison at 5~kb on chr22:20--30~Mb (1{,}964
+bins). Short-range: pairs $\le$1~Mb apart. $^{\ast}$FLAMINGO from its R
+package, 3 seeds; others single runs.}
+\label{tab:5kb}
+\centering
+\begin{tabular}{@{}lcc@{}}
+\toprule
+Method & Global dSCC & Short-range dSCC \\
+\midrule
+3DMax & \textbf{0.820} & \textbf{0.895} \\
+GenoFold & 0.814 & 0.892 \\
+ShRec3D & 0.783 & 0.677 \\
+FLAMINGO$^{\ast}$ & $0.655\pm0.017$ & 0.667 \\
+\bottomrule
+\end{tabular}
+\end{table}
 
 \begin{table}[t]
 \caption{GM12878 chr22, 50~kb, 701 bins (mean $\pm$ s.d., 3 seeds;
@@ -206,10 +253,40 @@ GenoFold & $0.893\pm0.001$ & $0.57\pm0.01$ & 244.9 \\
 only on chromosome~22. For GenoFold alone, whole-chromosome runs give
 dSCC 0.891 on chr22 (701 bins), 0.880 on chr20 (1{,}196) and 0.865 on
 chr16 (1{,}582); runtime rises from 223~s to 1{,}218~s and peak memory
-from 1.7 to 3.7~GB. Accuracy therefore declines slowly as chromosomes
+from 1.7 to 3.7~GB (Table~\ref{tab:chrom}). Accuracy therefore declines slowly as chromosomes
 grow, but without matching baseline runs these numbers say nothing about
 relative standing. A per-chromosome comparison across all methods is the
 first item of our follow-up work.
+
+\begin{table}[t]
+\caption{GenoFold on whole chromosomes of GM12878 at 50~kb (CPU).}
+\label{tab:chrom}
+\centering
+\begin{tabular}{@{}lcccc@{}}
+\toprule
+Chrom. & Bins & dSCC & Time (s) & Peak RSS (GB) \\
+\midrule
+chr22 & 701 & 0.891 & 223 & 1.7 \\
+chr20 & 1{,}196 & 0.880 & 632 & 2.8 \\
+chr16 & 1{,}582 & 0.865 & 1{,}218 & 3.7 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Fig.~\ref{fig:structure} shows the chr22 reconstruction next to the
+observed contact map. The pseudo-contacts implied by the coordinates
+reproduce the block structure of the observed map, though the
+reconstruction smooths the sharpest domain corners.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.49\columnwidth]{figures/fig_structure.png}\hfill
+\includegraphics[width=0.49\columnwidth]{figures/fig_contact.png}
+\caption{GM12878 chr22. Left: reconstruction coloured by per-bin
+uncertainty. Right: observed KR-normalized contacts against the
+pseudo-contacts implied by the reconstruction ($\log(1+x)$).}
+\label{fig:structure}
+\end{figure}
 
 \subsection{Agreement with Measured Distances}
 Table~\ref{tab:fish} compares reconstructed and imaged distances. At full
@@ -256,7 +333,7 @@ second. On GM12878 chr22, a GenoFold variant with Hi-C-only nodes trails
 the full model by only 0.002 dSCC at 50\% depth and 0.005 at 5\% (0.884
 against 0.879), and at full depth every configuration lies within 0.01
 (Hi-C only 0.889; without 4-mers 0.886; without GC and mappability
-0.894). A margin that small cannot account for a 0.14--0.16 lead over
+0.894). Table~\ref{tab:ablation} lists these runs. A margin that small cannot account for a 0.14--0.16 lead over
 3DMax. The more likely explanation is that the decoder has learned what
 chromatin at 10--50~kb tends to look like, which a per-matrix optimizer
 cannot do. Two experiments would settle the question, and we have not
@@ -266,19 +343,72 @@ missing from the sparse experiment. Until they are done we state the
 sparse result as an advantage of a trained reconstructor, not of
 multi-modality.
 
-\begin{figure}[t]
+\begin{table}[t]
+\caption{Modality ablation, GM12878 chr22 (held-out dSCC). Left: full
+depth; ``sparse'' restricts to pairs touching the lowest-coverage third
+of bins. Right: Hi-C-only versus full model as contacts are removed.}
+\label{tab:ablation}
 \centering
-\includegraphics[width=0.96\columnwidth]{figures/fig_fish_sparse.png}
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{@{}lcc@{}}
+\toprule
+Configuration & All pairs & Sparse \\
+\midrule
+Full model & 0.890 & 0.871 \\
+$-$ 4-mers & 0.886 & 0.867 \\
+$-$ GC, mappability & 0.894 & 0.877 \\
+Hi-C only & 0.889 & 0.871 \\
+\bottomrule
+\end{tabular}\hfill
+\begin{tabular}{@{}lcc@{}}
+\toprule
+Depth & Full & Hi-C only \\
+\midrule
+50\% & 0.890 & 0.888 \\
+20\% & 0.889 & 0.887 \\
+10\% & 0.892 & 0.888 \\
+5\% & 0.884 & 0.879 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure*}[t]
+\centering
+\includegraphics[width=0.8\textwidth]{figures/fig_fish_sparse.png}
 \caption{Agreement with imaged chr21 distances as Hi-C contacts are
-downsampled (log axis, right to left) in IMR90 and K562.}
+downsampled (log axis, right to left) in IMR90 and K562. GenoFold stays within 0.02 of its full-depth score;
+3DMax and ShRec3D fall sharply below 10\% of contacts. Raw Hi-C scores
+the thinned contacts as distances.}
 \label{fig:sparse}
-\end{figure}
+\end{figure*}
 
 \subsection{Transfer Across Cell Lines}
-Retrained on IMR90 and K562 chr22, GenoFold reaches dSCC 0.795 and 0.754;
-those libraries have roughly a fifth of GM12878's read depth at this
-locus. A GM12878-trained model applied without retraining gives 0.630 and
-0.653: well above chance, but clearly below retraining.
+Because GenoFold learns a mapping rather than a set of free coordinates,
+a model trained on one matrix can be applied to another. Retrained on
+IMR90 and K562 chr22, it reaches dSCC 0.795 and 0.754
+(Table~\ref{tab:crosscell}). These scores are lower than on GM12878
+mainly because the IMR90 and K562 libraries have roughly a fifth of
+GM12878's read depth at this locus. A GM12878-trained model applied
+without retraining gives 0.630 and 0.653: well above chance, but clearly
+below retraining. Transfer is therefore a convenience for a quick first
+structure, and retraining remains the better choice when a target
+matrix is available.
+
+\begin{table}[t]
+\caption{Cross-cell-line results on chr22. Transfer applies the
+GM12878-trained model unchanged; retrained fits the target line.}
+\label{tab:crosscell}
+\centering
+\begin{tabular}{@{}lcc@{}}
+\toprule
+Cell line & Transfer dSCC & Retrained dSCC \\
+\midrule
+GM12878 (train) & \multicolumn{2}{c}{0.892 (in-domain)} \\
+IMR90 & 0.630 & 0.795 \\
+K562 & 0.653 & 0.754 \\
+\bottomrule
+\end{tabular}
+\end{table}
 
 \subsection{Uncertainty}
 The combined per-bin radius correlates with per-bin reconstruction error
@@ -294,7 +424,7 @@ we no longer describe it as calibrated.
 
 \begin{figure}[t]
 \centering
-\includegraphics[width=0.82\columnwidth]{figures/fig_calibration.png}
+\includegraphics[width=\columnwidth]{figures/fig_calibration.png}
 \caption{GM12878 chr22. Left: per-bin uncertainty against error.
 Right: mean error by uncertainty decile.}
 \label{fig:calib}
@@ -302,7 +432,7 @@ Right: mean error by uncertainty decile.}
 
 \subsection{Attribution}
 Integrated Gradients on the trained chr22 model, summed by feature group
-and normalized, give 0.43 to GC and mappability, 0.30 to coverage, 0.18
+and normalized (Fig.~\ref{fig:importance}), give 0.43 to GC and mappability, 0.30 to coverage, 0.18
 to position and 0.10 to the 136 4-mer features. Two cautions apply.
 Attribution measures sensitivity, and the ablation shows that removing
 GC and mappability does not lower dSCC (0.894 against 0.890). The two
@@ -310,6 +440,14 @@ results are compatible: the model reads these features, but at full depth
 the contact graph carries the same information. The attributions describe
 what the network uses; they are not evidence that any modality is
 needed.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.9\columnwidth]{figures/fig_importance.png}
+\caption{Integrated-Gradients importance by feature group, trained
+GM12878 chr22 model.}
+\label{fig:importance}
+\end{figure}
 
 % ===================================================================
 \section{Discussion and Limitations}
