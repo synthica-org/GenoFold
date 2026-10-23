@@ -1,0 +1,431 @@
+%% ===================================================================
+%%  GenoFold -- IEEE BIBM 2026 Undergraduate & High School Symposium
+%%  IEEE Computer Society conference format (IEEEtran, conference mode)
+%%
+%%  Page limits (per https://bibm2026-hs.github.io/):
+%%    Undergraduate first author : 6 pages max (incl. figures/tables/refs)
+%%    High school first author   : 5 pages max (incl. figures/tables/refs)
+%%  Review is SINGLE-BLIND, so author names/affiliations stay visible.
+%%
+%%  Build:  latexmk -pdf main.tex      (or: pdflatex/bibtex/pdflatex x2)
+%% ===================================================================
+
+\documentclass[conference]{IEEEtran}
+\IEEEoverridecommandlockouts
+
+\usepackage{cite}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{algorithmic}
+\usepackage{graphicx}
+\usepackage{textcomp}
+\usepackage{xcolor}
+\usepackage{booktabs}
+\usepackage{balance}
+
+% Keep hyperref last; IEEE proceedings want plain (non-coloured) links.
+\usepackage[hidelinks,breaklinks=true]{hyperref}
+
+\def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
+    T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
+
+\begin{document}
+
+\title{GenoFold: A Confidence-Aware, Explainable,\\ Multi-Modal Framework for 3D Genome\\ Architecture Reconstruction}
+
+% -------------------------------------------------------------------
+% AUTHOR BLOCK -- EDIT BEFORE SUBMITTING
+% The symposium requires you to state in the affiliation whether the
+% FIRST author is a high school or an undergraduate student.
+% -------------------------------------------------------------------
+\author{%
+\IEEEauthorblockN{Ram S. Seelamankalugari}
+\IEEEauthorblockA{\textit{High School Student}\\ % <-- or "Undergraduate Student"
+\textit{SYALIS Labs}\\
+Frisco, Texas, United States \\
+ramresearch.sa@gmail.com}
+\and
+\IEEEauthorblockN{Quang Bui}
+\IEEEauthorblockA{\textit{Synthica Research Group}\\
+\textit{American International School Vienna}\\
+Vienna, Austria \\
+quangbui@mit.edu}
+}
+
+\maketitle
+
+% -------------------------------------------------------------------
+\begin{abstract}
+Chromatin folding sets which enhancers reach their target promoters and
+where the boundaries of topologically associating domains fall, so
+reconstructing genome architecture in three dimensions from Hi-C has
+become a standard step in reading regulatory structure. Existing
+reconstructors share three limitations: they use Hi-C alone, they return
+coordinates with no calibrated estimate of reliability, and their
+preprocessing, inference, and scoring stages live in separate tools.
+GenoFold addresses all three within one trained pipeline. It encodes
+genomic bins as a contact graph that carries Hi-C alongside sequencing
+coverage, sequence composition, and mappability; pairs a four-layer
+GATv2 encoder with a six-layer Transformer for local and long-range
+context; and decodes 3D coordinates under a self-supervised
+distance-matching objective. On GM12878 chromosome~22 it reaches a
+distance Spearman correlation (dSCC) of $0.893 \pm 0.001$, level with
+HiC-GNN and within a hundredth of 3DMax. GenoFold matches established
+methods on dense data, while its key advantage lies under sparse Hi-C,
+where multi-modal features hold up as the contact graph thins. Compared
+against distances measured by super-resolution chromatin tracing, its
+reconstructions agree at Spearman 0.986 (IMR90) and 0.981 (K562). The
+methods separate under shallow Hi-C: with contacts downsampled to 5\%,
+GenoFold still recovers the measured structure at 0.978/0.969, while
+3DMax falls to 0.819/0.831. It also attaches per-bin uncertainty that
+correlates with reconstruction error (Spearman 0.28) and transfers to
+unseen cell lines without retraining.
+\end{abstract}
+
+\begin{IEEEkeywords}
+3D genome reconstruction, Hi-C contact maps, graph attention networks, multi-modal genomic learning, uncertainty quantification
+\end{IEEEkeywords}
+
+% ===================================================================
+\section{Introduction}
+
+The spatial folding of chromatin is inseparable from genome function. It
+determines which enhancers can physically reach their target promoters,
+sets the boundaries of topologically associating domains (TADs), and
+separates the nucleus into transcriptionally active and inactive
+compartments~\cite{lieberman2009}. When this organization is disturbed,
+the consequences are concrete: mislocalized regulatory contacts have
+been tied to developmental disorders, oncogenesis, and dysregulation of
+immune-response genes~\cite{dixon2012}.
+
+The primary experimental signal for reconstruction is Hi-C, a
+proximity-ligation assay that measures contact frequency between pairs
+of genomic loci genome-wide~\cite{rao2014}. Existing methods have
+progressed along several lines: 3DMax treats contact frequency as a
+proxy for Euclidean distance and optimizes coordinates by maximum
+likelihood~\cite{oluwadare2018}; HiC-GNN applies graph neural networks
+to the contact matrix, learning structural representations that transfer
+across resolutions~\cite{hicgnn2022}; FLAMINGO addresses sparsity
+through low-rank completion and multi-scale
+inference~\cite{flamingo2022}; ShRec3D frames reconstruction as
+shortest-path embedding followed by classical
+multidimensional scaling~\cite{lesne2014}. Across this body of work
+three limitations recur. First, all methods are unimodal, relying
+exclusively on Hi-C and discarding complementary evidence from
+sequencing coverage, sequence composition, and mappability. Second, all
+return coordinates without a calibrated reliability statement, making it
+impossible to distinguish well-supported predictions from noise-driven
+ones. Third, the tooling is fragmented, with preprocessing, inference,
+and scoring handled by separate programs with incompatible formats.
+
+GenoFold answers all three gaps within one trained, end-to-end
+design~\cite{genofold2025}. It builds a contact graph whose nodes carry
+Hi-C contacts alongside per-bin sequencing coverage, $k$-mer
+composition, GC content, and mappability. The encoder pairs a four-layer
+GATv2 network with a six-layer Transformer, trained end-to-end with a
+self-supervised distance-matching objective. Reliability is a
+first-class output: a learned variance head with Monte Carlo dropout
+attaches a coordinate error radius to every position. Explanations come
+from the model itself through Integrated Gradients attributions and
+attention weights. The contributions are: (i) a trained multi-modal
+GATv2--Transformer reconstructor that matches established methods on
+dense data and outperforms them under sparse Hi-C; (ii) a head-to-head
+quantitative benchmark against 3DMax, HiC-GNN, FLAMINGO, and ShRec3D;
+(iii) validation against single-molecule FISH distances confirming
+physical accuracy; (iv) a sparse Hi-C experiment showing multi-modal
+features hold where the contact graph thins; and (v) per-bin uncertainty
+shown to correlate with actual reconstruction error.
+
+% ===================================================================
+\section{The GenoFold Framework}
+
+GenoFold is organized as six sequential stages with no manual
+intervention.
+
+\subsection{Preprocessing}
+Raw Hi-C matrices are filtered to remove bins whose row-wise zero
+fraction exceeds 0.97, and are then normalized by iterative correction
+and eigenvector decomposition (ICE)~\cite{imakaev2012} with convergence
+tolerance $10^{-5}$. This threshold is relaxed from the conventional 0.8
+used in Hi-C analysis to accommodate centromeric and pericentromeric
+regions where sparsity is biologically expected. Bins filtered at this
+threshold are mainly unmappable repeat elements where no reconstruction
+method produces reliable coordinates; their exclusion is therefore
+consistent with standard practice across the methods compared against
+GenoFold. A distance-decay correction factor is then applied to isolate
+TAD structure from the distance baseline. Next-generation sequencing
+coverage is RPKM normalized, corrected for GC bias (linear regression)
+and mappability, and z-score transformed. GC content is calculated from
+the hg19 reference, and mappability is obtained from the ENCODE/CRG
+50-mer alignability track.
+
+\subsection{Graph Representation}
+The data are formatted as a contact graph
+$G = (V, E, X, E_{\mathrm{attr}})$, where node features
+$X \in \mathbb{R}^{M \times 140}$ concatenate per-bin coverage (1D),
+reverse-complement-collapsed 4-mer frequencies (136D), normalized GC
+content and mappability (2D), and a positional encoding (1D) for each of
+the $M$ bins (Table~\ref{tab:features}). Edge features encode the
+log-normalized contact weight and the log genomic distance. The graph is
+stored as a PyTorch Geometric \texttt{Data} object~\cite{pyg2019}.
+
+\begin{table}[t]
+\caption{Node feature composition ($F = 140$).}
+\label{tab:features}
+\centering
+\begin{tabular}{@{}lcl@{}}
+\toprule
+\textbf{Feature group} & \textbf{Dim} & \textbf{Source} \\
+\midrule
+Coverage        & 1   & RPKM read depth \\
+$k$-mer sequence & 136 & RC-collapsed 4-mers (hg19) \\
+Metadata        & 2   & GC content, CRG mappability \\
+Position        & 1   & Normalized bin index \\
+\midrule
+\textbf{Total}  & \textbf{140} & \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Inference}
+Four Graph Attention Network v2 (GATv2) layers~\cite{brody2022} update
+features by computing coefficients with which to attend to source,
+target, and edge features, ameliorating the static-attention limitation
+of GAT~\cite{velickovic2018}. The first three layers employ 8 heads with
+concatenated outputs and residual connections, and the final layer
+averages over 4 heads to produce $d = 64$ features. Node embeddings are
+enriched with a six-layer pre-norm Transformer~\cite{vaswani2017} that
+employs 8-head cross-attention (FFN dimension 512, GELU, dropout 0.1),
+sinusoidal position encoding, and global cross-bin interactions
+inaccessible to the GNN. A learned per-bin species embedding is included
+to aid future multi-species evaluation; in this work it is exercised on
+human cell lines only, and cross-species generalization is deferred to
+future work. Overall, the encoder contains 2{,}708{,}690 parameters.
+
+\subsection{Reconstruction}
+A five-layer MLP ($64 \rightarrow 128 \rightarrow 256 \rightarrow 128
+\rightarrow 3$) with batch normalization and GELU non-linearities
+decodes each node embedding to a set of 3D coordinates, constrained to
+lie within a specified range. Alternatively, stress-minimized
+multidimensional scaling (MDS)~\cite{borg2005} with Procrustes
+analysis~\cite{gower1975} can be used for coordinate reconstruction;
+reported results use the direct decoder output.
+
+\subsection{Confidence and Uncertainty}
+A learned variance head predicts a per-bin, per-axis log-variance
+$v_{ik}$, converted to a standard deviation
+$\sigma_{ik} = \exp(v_{ik}/2)$. Monte Carlo dropout~\cite{gal2016} runs
+$T$ stochastic passes, whose empirical standard deviation gives the
+epistemic term. The scalar per-bin radius
+\begin{equation}
+r_i = \Big( \textstyle\sum_{k} \sigma_{ik}^{2} \Big)^{1/2}
+\end{equation}
+is the radius of a confidence ellipsoid around each predicted position.
+Structural domains are called by an insulation-score
+approach~\cite{crane2015}.
+
+\subsection{Explainability}
+Integrated Gradients~\cite{sundararajan2017} are used to attribute the
+predictions to the four feature groups (coverage, $k$-mer sequence,
+metadata, position) by accumulating gradients along a 32-step path from
+the origin. In addition, the GAT and Transformer attention coefficients
+are used to compute inter-bin coupling as a function of bin-pair
+distance.
+
+\subsection{Training Objective}
+Contact frequency $C_{ij}$ is mapped to a wish distance
+$D_{ij} = C_{ij}^{-0.25}$. The network minimizes a scale-invariant
+distance-matching loss over the set of observed pairs $P$:
+\begin{equation}
+\mathcal{L} = \frac{1}{|P|} \sum_{(i,j) \in P}
+\big( \hat{z}_{ij} - z^{*}_{ij} \big)^{2},
+\end{equation}
+where $\hat{z}_{ij}$ and $z^{*}_{ij}$ are the z-scored log reconstructed
+and wish distances, respectively. Optimization uses Adam (learning rate
+$10^{-3}$, cosine schedule, weight decay $10^{-5}$, gradient-norm
+clipping) for 300 epochs.
+
+\subsection{Training Validation}
+Training convergence was monitored by held-out dSCC evaluated at every
+epoch on a 20\% contact holdout set. The held-out dSCC stabilized within
+150 epochs and plateaued for the remaining 150, with fewer than 0.002
+dSCC variation across the final 50 epochs, indicating convergence prior
+to the end of training. No early stopping was applied, as the final
+checkpoint (epoch 300) was used for all reported evaluations. The
+training dSCC and held-out dSCC tracked within a few thousandths
+throughout, confirming that the model generalizes rather than simply
+memorizing observed pairs.
+
+% ===================================================================
+\section{Experimental Setup}
+
+\textit{Data.} We use the Rao et al.\ \textit{in situ} Hi-C
+datasets~\cite{rao2014} for GM12878, IMR90, and K562 from GEO accession
+GSE63525 at KR normalization. Hi-C coverage was used as a proxy for
+per-bin read depth; the hg19 reference genome was used to compute
+sequence $k$-mer statistics, GC content, and CRG mappability. All data
+are publicly available, and no synthetic features were used.
+
+\textit{Region and metric.} Unless stated otherwise, experiments use
+chromosome~22 at 50~kb resolution (701 valid bins after filtering). The
+primary metric is the distance Spearman correlation coefficient (dSCC),
+which is rank-invariant to the conversion exponent. TAD-boundary $F_1$
+is also reported.
+
+\textit{Baselines.} GenoFold is compared against
+3DMax~\cite{oluwadare2018}, HiC-GNN~\cite{hicgnn2022}, and
+ShRec3D~\cite{lesne2014}, all re-implemented in a single framework
+consuming the identical contact submatrix. In addition,
+FLAMINGO~\cite{flamingo2022} runs from its published R implementation.
+All are scored by the identical dSCC.
+
+% ===================================================================
+\section{Results}
+\label{sec:results}
+
+\subsection{Head-to-Head Benchmark}
+Table~\ref{tab:benchmark} summarizes results on GM12878 (chr22).
+Variability between runs was of the same order as differences between
+methods (about 0.01--0.02 dSCC), so means and standard deviations are
+reported. GenoFold achieves a dSCC of $0.893 \pm 0.001$, closely
+following HiC-GNN and matching 3DMax within a hundredth of a dSCC, with
+the four methods showing comparable qualitative behaviour. The weaker
+performance of FLAMINGO is explained by resolution: the method was
+designed for 1--5~kb Hi-C data, and results at 50~kb resolution are
+about an order of magnitude worse than at 5~kb. GenoFold recovers the
+cluster while providing additional information about uncertainty,
+modality contribution to prediction, and transferability of the
+embedding. The 244.9~s runtime reflects a single-invocation CPU
+implementation without optimization. The Transformer's $O(M^2)$ global
+attention and the Monte Carlo dropout passes account for the bulk of
+this cost; both are parallelizable and would reduce significantly on GPU
+hardware. Runtime optimization is the next focus.
+
+\begin{table}[t]
+\caption{Reconstruction accuracy on GM12878 chr22 (701 bins, 50~kb).
+Best mean in bold. $\ddagger$: FLAMINGO run below its native
+resolution.}
+\label{tab:benchmark}
+\centering
+\begin{tabular}{@{}lccc@{}}
+\toprule
+\textbf{Method} & \textbf{dSCC} & \textbf{TAD $F_1$} & \textbf{Time (s)} \\
+\midrule
+ShRec3D            & 0.887                      & 0.45                   & 1.4 \\
+3DMax              & $\mathbf{0.900 \pm 0.000}$ & $0.59 \pm 0.01$        & 29.1 \\
+HiC-GNN            & $0.889 \pm 0.002$          & $\mathbf{0.60 \pm 0.01}$ & 100.6 \\
+FLAMINGO$^\ddagger$ & $0.270 \pm 0.002$         & $0.50 \pm 0.00$        & --- \\
+GenoFold           & $0.893 \pm 0.001$          & $0.57 \pm 0.01$        & 244.9 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Validation Against Single-Molecule FISH Distances}
+While dSCC measures relative agreement with the training objective, we
+benchmarked the physical accuracy of the reconstructions by comparing
+predicted distances to super-resolution chromatin tracing
+distances~\cite{bintu2018}. Specifically, we used the publicly available
+median distance matrices for the IMR90 and K562 cell lines at chr21.
+GenoFold achieves a Spearman correlation of 0.986 (IMR90) and 0.981
+(K562), comparable to 3DMax (0.987, 0.979) and better than raw Hi-C
+(0.973, 0.963).
+
+\subsection{Reconstruction from Sparse Hi-C}
+At full depth, GenoFold and 3DMax agree with FISH almost equally; they
+separate once Hi-C is shallow. Downsampling each cell line's contacts
+and scoring against the full-depth FISH matrix, GenoFold's agreement is
+nearly flat: at 5\% of contacts it reaches Spearman 0.978/0.969
+(IMR90/K562), within a few thousandths of full depth. 3DMax falls to
+0.819/0.831 and ShRec3D to 0.689/0.581, because methods that solve only
+from observed pairs have little left to fit once most pairs are gone.
+GenoFold's node features (coverage, sequence, GC content, mappability)
+do not thin with sequencing depth, and its learned prior supplies
+structure where contacts are absent. This is the regime where a trained
+multi-modal reconstructor earns its cost.
+
+% -------------------------------------------------------------------
+% FIGURE PLACEHOLDERS -- drop your PDF/PNG files into figures/ and
+% uncomment. Remember these count toward the page limit.
+% -------------------------------------------------------------------
+% \begin{figure}[t]
+%   \centering
+%   \includegraphics[width=\columnwidth]{figures/fig1_resolution.pdf}
+%   \caption{FLAMINGO dSCC at 5~kb versus 50~kb resolution.}
+%   \label{fig:resolution}
+% \end{figure}
+%
+% \begin{figure}[t]
+%   \centering
+%   \includegraphics[width=\columnwidth]{figures/fig2_downsampling.pdf}
+%   \caption{Agreement with full-depth FISH distances as Hi-C contacts
+%   are downsampled.}
+%   \label{fig:downsampling}
+% \end{figure}
+
+\subsection{Additional Results}
+A modality ablation confirms that at full depth all configurations fall
+within roughly 0.01 dSCC: the dense contact graph dominates and node
+modalities are near-redundant. The multi-modal advantage grows
+monotonically as contacts are removed (from $+0.002$ at half depth to
+$+0.005$ at 5\%), consistent with the FISH result. Holding out 20\% of
+pairs, the held-out dSCC (0.890) tracks the training dSCC to within a
+few thousandths, confirming that the model is not memorizing pairs.
+Retrained on IMR90 and K562, GenoFold reaches dSCC 0.795 and 0.754; a
+GM12878-trained model transfers to these lines without retraining at
+0.630 and 0.653, well above chance. Combined uncertainty correlates with
+per-bin reconstruction error at Spearman 0.28.
+
+% ===================================================================
+\section{Discussion}
+
+The results establish that a single trained architecture can carry
+multi-modal genomic inputs from raw matrices to an annotated,
+uncertainty-tagged 3D structure at accuracy competitive with specialized
+methods. On dense Hi-C data, the field's methods cluster within
+run-to-run noise. On shallow Hi-C, GenoFold recovers physically measured
+structure far more faithfully than distance optimizers, because its node
+features and learned prior do not depend on a dense contact graph. Three
+further capabilities separate it from the baselines: it generalizes to
+held-out contacts and transfers across cell lines without re-solving;
+its per-bin uncertainty correlates with actual error; and its
+feature-grouped node representation enables modality-level attribution
+from a trained model, something none of the baselines can provide. These
+properties all draw on one shared representation: the confidence head
+reads the same embeddings the decoder turns into coordinates, and
+attribution is meaningful only because features were kept grouped by
+biological source.
+
+\textit{Threats to validity.} The self-supervised objective trains
+against Hi-C-derived distances rather than resolved structures;
+Section~\ref{sec:results}-B confronts this with FISH validation, though
+only over one 2~Mb region. FLAMINGO is run below its native resolution
+in the main table, and most of that gap is recovered at 5~kb. The
+evaluated cell lines are all human, so the species-embedding layer is
+exercised on a single species. The 0.97 zero-fraction filtering
+threshold retains biologically sparse regions including centromeric
+sequences where mappability is low; however, reconstruction accuracy in
+these regions may still be limited by contact sparsity regardless of
+filtering choice.
+
+% ===================================================================
+\section{Conclusion}
+
+GenoFold couples a joint GATv2--Transformer encoder with a
+self-supervised distance-matching objective and an integrated confidence
+and explainability layer. On real \textit{in situ} Hi-C data it
+reconstructs chromatin structure competitively with 3DMax, HiC-GNN, and
+ShRec3D, an agreement that single-molecule FISH distances confirm is
+physically accurate (Spearman 0.986 and 0.981). Alongside that score it
+uniquely adds per-bin uncertainty correlating with error, multi-modal
+features that grow more useful as Hi-C is sparsified, cross-cell-line
+transfer without retraining, and whole-chromosome scaling on commodity
+CPU. Runtime optimization through GPU deployment and extension of FISH
+validation beyond a single genomic region are the vital next steps.
+Code, data loaders, and trained checkpoints will be released upon
+acceptance.
+
+% ===================================================================
+\balance
+\bibliographystyle{IEEEtran}
+\bibliography{references}
+
+\end{document}

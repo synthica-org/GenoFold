@@ -205,7 +205,7 @@ quantitative comparison on all of these axes.
 
 \begin{figure*}[t]
 \centering
-\includegraphics[width=0.88\textwidth]{images/image1.png}
+\includegraphics[width=0.88\textwidth]{../figures/pipeline_image1.png}
 \caption{The six-stage GenoFold pipeline. A single invocation carries raw Hi-C
 and sequencing inputs through preprocessing, graph construction, GNN--Transformer
 inference, 3D reconstruction, confidence and uncertainty scoring, and
@@ -534,7 +534,7 @@ cost against a direct optimizer.
 
 \begin{figure}[t]
 \centering
-\includegraphics[width=0.98\columnwidth]{figures/fig_fish_sparse.png}
+\includegraphics[width=0.98\columnwidth]{../figures/fig_fish_sparse.png}
 \caption{Agreement with single-molecule FISH distances as the input Hi-C is downsampled
 (right to left, log axis) for IMR90 and K562 chromosome~21. GenoFold holds close to its
 full-depth accuracy across two orders of magnitude of coverage, while the distance
@@ -620,7 +620,7 @@ Without training, uncertainty scores carry no comparable correlation with error.
 
 \begin{figure}[t]
 \centering
-\includegraphics[width=0.8\columnwidth]{figures/fig_calibration.png}
+\includegraphics[width=0.8\columnwidth]{../figures/fig_calibration.png}
 \caption{Uncertainty calibration on GM12878 chromosome~22. Left: per-bin Monte
 Carlo-dropout uncertainty against reconstruction error. Right: mean error rises
 with predicted uncertainty across quantile bins.}
@@ -641,7 +641,7 @@ that these rankings now carry meaning.
 
 \begin{figure}[t]
 \centering
-\includegraphics[width=0.8\columnwidth]{figures/fig_importance.png}
+\includegraphics[width=0.8\columnwidth]{../figures/fig_importance.png}
 \caption{Integrated-Gradients feature-group importance on the trained model.}
 \label{fig:importance}
 \end{figure}
@@ -667,7 +667,7 @@ process high-water mark.}
 
 \begin{figure}[t]
 \centering
-\includegraphics[width=0.8\columnwidth]{figures/fig_scaling.png}
+\includegraphics[width=0.8\columnwidth]{../figures/fig_scaling.png}
 \caption{Training runtime against problem size across whole chromosomes at 50~kb;
 each point is annotated with its dSCC.}
 \label{fig:scaling}
@@ -675,7 +675,7 @@ each point is annotated with its dSCC.}
 
 \begin{figure}[t]
 \centering
-\includegraphics[width=0.8\columnwidth]{figures/fig_structure.png}
+\includegraphics[width=0.8\columnwidth]{../figures/fig_structure.png}
 \caption{GenoFold 3D reconstruction of GM12878 chromosome~22, colored by per-bin
 Monte Carlo-dropout uncertainty. The backbone traces consecutive bins.}
 \label{fig:structure}
@@ -683,7 +683,7 @@ Monte Carlo-dropout uncertainty. The backbone traces consecutive bins.}
 
 \begin{figure}[t]
 \centering
-\includegraphics[width=0.8\columnwidth]{figures/fig_contact.png}
+\includegraphics[width=0.8\columnwidth]{../figures/fig_contact.png}
 \caption{Observed KR-normalized Hi-C contact map (left) and the pseudo-contact map
 implied by the GenoFold reconstruction (right) for GM12878 chromosome~22, on a
 $\log(1+x)$ scale. The reconstruction recovers the block/domain organization of the
