@@ -42,7 +42,7 @@ The network is **trained** end-to-end with a self-supervised distance-matching o
 
 ## Research Question
 
-> How can a confidence-aware, explainable, multi-modal AI framework integrating Hi-C, NGS, and genomic metadata of numerous species improve the accuracy, robustness, and interpretability of 3D genome reconstruction compared with existing approaches?
+> How can a confidence-aware, explainable, multi-modal AI framework integrating Hi-C, NGS, and genomic metadata improve the accuracy, robustness, and interpretability of 3D genome reconstruction compared with existing approaches?
 
 ---
 
